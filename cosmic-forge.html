@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Forge - Create Your Universe</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        
+        :root {
+            --cosmic-dark: #050511;
+            --cosmic-purple: #6B46C1;
+            --cosmic-blue: #3B82F6;
+            --cosmic-pink: #EC4899;
+            --cosmic-gold: #F59E0B;
+            --glow-intensity: 2;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--cosmic-dark);
+            color: white;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        
+        .game-ui {
+            position: relative;
+            z-index: 10;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 300px 1fr 350px;
+            gap: 1px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .panel {
+            background: rgba(10, 10, 30, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
+        .panel::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .panel::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .panel::-webkit-scrollbar-thumb {
+            background: var(--cosmic-purple);
+            border-radius: 3px;
+        }
+        
+        /* Center Panel - Main Game */
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .universe-container {
+            text-align: center;
+            position: relative;
+        }
+        
+        .universe-display {
+            font-size: 120px;
+            margin: 20px 0;
+            filter: drop-shadow(0 0 30px currentColor);
+            animation: float 3s ease-in-out infinite;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        
+        .universe-display:active {
+            transform: scale(0.95);
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .resource-counter {
+            font-size: 48px;
+            font-weight: 800;
+            margin: 10px 0;
+            background: linear-gradient(135deg, var(--cosmic-blue), var(--cosmic-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 10px rgba(107, 70, 193, 0.5));
+        }
+        
+        .per-second {
+            font-size: 18px;
+            opacity: 0.8;
+            margin-bottom: 30px;
+        }
+        
+        .click-power {
+            display: inline-block;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        /* Left Panel - Upgrades */
+        .upgrades-panel {
+            padding: 20px;
+        }
+        
+        .panel-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+            background: linear-gradient(135deg, var(--cosmic-gold), var(--cosmic-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .upgrade-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .upgrade-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--cosmic-purple);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(107, 70, 193, 0.3);
+        }
+        
+        .upgrade-item.can-afford {
+            border-color: var(--cosmic-blue);
+            animation: pulse-border 2s infinite;
+        }
+        
+        @keyframes pulse-border {
+            0%, 100% { border-color: var(--cosmic-blue); }
+            50% { border-color: var(--cosmic-purple); }
+        }
+        
+        .upgrade-item.maxed {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .upgrade-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .upgrade-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .upgrade-level {
+            font-size: 14px;
+            color: var(--cosmic-gold);
+        }
+        
+        .upgrade-desc {
+            font-size: 13px;
+            opacity: 0.7;
+            margin-bottom: 8px;
+        }
+        
+        .upgrade-effect {
+            font-size: 12px;
+            color: var(--cosmic-blue);
+            margin-bottom: 10px;
+        }
+        
+        .upgrade-cost {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--cosmic-pink);
+        }
+        
+        /* Right Panel - Stats & Achievements */
+        .stats-panel {
+            padding: 20px;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab-button {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .tab-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .tab-button.active {
+            background: var(--cosmic-purple);
+            border-color: var(--cosmic-purple);
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .stat-label {
+            opacity: 0.7;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            color: var(--cosmic-gold);
+        }
+        
+        .achievement-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .achievement-item.unlocked {
+            background: linear-gradient(135deg, rgba(107, 70, 193, 0.2), rgba(59, 130, 246, 0.2));
+            border: 1px solid var(--cosmic-purple);
+        }
+        
+        .achievement-icon {
+            font-size: 24px;
+            filter: grayscale(1) opacity(0.3);
+        }
+        
+        .achievement-item.unlocked .achievement-icon {
+            filter: none;
+        }
+        
+        .achievement-info {
+            flex: 1;
+        }
+        
+        .achievement-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .achievement-desc {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        
+        /* Prestige Button */
+        .prestige-section {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: center;
+        }
+        
+        .prestige-button {
+            background: linear-gradient(135deg, var(--cosmic-pink), var(--cosmic-purple));
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(236, 72, 153, 0.4);
+        }
+        
+        .prestige-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(236, 72, 153, 0.6);
+        }
+        
+        .prestige-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .prestige-info {
+            margin-top: 10px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        /* Particle Text Effect */
+        .particle-text {
+            position: absolute;
+            pointer-events: none;
+            animation: particle-rise 2s ease-out forwards;
+            font-weight: 700;
+            font-size: 24px;
+            color: var(--cosmic-gold);
+            text-shadow: 0 0 10px currentColor;
+        }
+        
+        @keyframes particle-rise {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) scale(0.5);
+                opacity: 0;
+            }
+        }
+        
+        /* Save Notification */
+        .save-notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(107, 70, 193, 0.9);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .save-notification.show {
+            opacity: 1;
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 1024px) {
+            .game-ui {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+            }
+            
+            .upgrades-panel, .stats-panel {
+                max-height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div class="game-ui">
+        <!-- Left Panel - Upgrades -->
+        <div class="panel upgrades-panel">
+            <h2 class="panel-title">🌌 Cosmic Upgrades</h2>
+            <div id="upgrades-list"></div>
+        </div>
+        
+        <!-- Center Panel - Main Game -->
+        <div class="panel main-panel">
+            <div class="prestige-section">
+                <button class="prestige-button" id="prestige-btn" disabled>
+                    Big Bang 💥
+                </button>
+                <div class="prestige-info">
+                    <div id="prestige-amount">0 Cosmic Shards</div>
+                </div>
+            </div>
+            
+            <div class="universe-container">
+                <div class="universe-display" id="main-clicker">🌌</div>
+                <div class="resource-counter" id="energy-display">0</div>
+                <div class="per-second" id="per-second">0 energy/sec</div>
+                <div class="click-power">Click Power: <span id="click-power">1</span></div>
+            </div>
+        </div>
+        
+        <!-- Right Panel - Stats & Achievements -->
+        <div class="panel stats-panel">
+            <div class="tab-buttons">
+                <button class="tab-button active" data-tab="stats">📊 Stats</button>
+                <button class="tab-button" data-tab="achievements">🏆 Achievements</button>
+            </div>
+            
+            <div id="stats-content" class="tab-content">
+                <div class="stat-item">
+                    <span class="stat-label">Total Clicks</span>
+                    <span class="stat-value" id="stat-clicks">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Total Energy</span>
+                    <span class="stat-value" id="stat-total-energy">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Universes Created</span>
+                    <span class="stat-value" id="stat-universes">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Play Time</span>
+                    <span class="stat-value" id="stat-playtime">0s</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Cosmic Shards</span>
+                    <span class="stat-value" id="stat-shards">0</span>
+                </div>
+            </div>
+            
+            <div id="achievements-content" class="tab-content" style="display: none;">
+                <div id="achievements-list"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="save-notification" id="save-notification">Game Saved ✨</div>
+    
+    <script>
+        // Game State
+        let gameState = {
+            energy: 0,
+            totalEnergy: 0,
+            energyPerSecond: 0,
+            clickPower: 1,
+            cosmicShards: 0,
+            totalClicks: 0,
+            universesCreated: 0,
+            startTime: Date.now(),
+            lastSave: Date.now(),
+            upgrades: {
+                autoCollector: { level: 0, cost: 10, baseProduction: 0.1, owned: 0 },
+                cosmicLens: { level: 0, cost: 100, baseProduction: 1, owned: 0 },
+                quantumReactor: { level: 0, cost: 1000, baseProduction: 10, owned: 0 },
+                stellarForge: { level: 0, cost: 10000, baseProduction: 100, owned: 0 },
+                galaxyEngine: { level: 0, cost: 100000, baseProduction: 1000, owned: 0 },
+                // Click upgrades
+                clickBoost: { level: 0, cost: 50, multiplier: 2, owned: 0 },
+                quantumClick: { level: 0, cost: 5000, multiplier: 10, owned: 0 }
+            },
+            achievements: {}
+        };
+        
+        // Upgrade Definitions
+        const upgradeDefinitions = {
+            autoCollector: {
+                name: "Auto Collector",
+                desc: "Tiny drones that gather cosmic energy",
+                icon: "🤖",
+                costMultiplier: 1.15
+            },
+            cosmicLens: {
+                name: "Cosmic Lens", 
+                desc: "Focus starlight into pure energy",
+                icon: "🔍",
+                costMultiplier: 1.2
+            },
+            quantumReactor: {
+                name: "Quantum Reactor",
+                desc: "Harness quantum fluctuations",
+                icon: "⚛️",
+                costMultiplier: 1.25
+            },
+            stellarForge: {
+                name: "Stellar Forge",
+                desc: "Create energy from star cores",
+                icon: "⭐",
+                costMultiplier: 1.3
+            },
+            galaxyEngine: {
+                name: "Galaxy Engine",
+                desc: "Power from entire galaxies",
+                icon: "🌀",
+                costMultiplier: 1.35
+            },
+            clickBoost: {
+                name: "Click Boost",
+                desc: "Enhance your cosmic touch",
+                icon: "👆",
+                costMultiplier: 2,
+                maxLevel: 10
+            },
+            quantumClick: {
+                name: "Quantum Click",
+                desc: "Click through dimensions",
+                icon: "🌟",
+                costMultiplier: 3,
+                maxLevel: 5
+            }
+        };
+        
+        // Achievements
+        const achievements = [
+            { id: "firstClick", name: "First Contact", desc: "Click the universe", icon: "👆", check: () => gameState.totalClicks >= 1 },
+            { id: "click100", name: "Cosmic Clicker", desc: "Click 100 times", icon: "💫", check: () => gameState.totalClicks >= 100 },
+            { id: "click1000", name: "Universe Shaper", desc: "Click 1000 times", icon: "🌌", check: () => gameState.totalClicks >= 1000 },
+            { id: "energy1000", name: "Energy Novice", desc: "Collect 1,000 energy", icon: "⚡", check: () => gameState.totalEnergy >= 1000 },
+            { id: "energy1M", name: "Energy Master", desc: "Collect 1M energy", icon: "💥", check: () => gameState.totalEnergy >= 1000000 },
+            { id: "firstUpgrade", name: "Evolution", desc: "Buy your first upgrade", icon: "📈", check: () => Object.values(gameState.upgrades).some(u => u.level > 0) },
+            { id: "allUpgrades", name: "Cosmic Arsenal", desc: "Own all upgrade types", icon: "🎯", check: () => Object.values(gameState.upgrades).every(u => u.level > 0) },
+            { id: "firstPrestige", name: "Big Bang", desc: "Reset the universe", icon: "💥", check: () => gameState.universesCreated >= 1 },
+            { id: "speed100", name: "Energy Flow", desc: "Reach 100 energy/sec", icon: "⚡", check: () => gameState.energyPerSecond >= 100 },
+            { id: "speed10k", name: "Cosmic Storm", desc: "Reach 10K energy/sec", icon: "🌪️", check: () => gameState.energyPerSecond >= 10000 }
+        ];
+        
+        // Three.js Scene
+        let scene, camera, renderer, particles, particleSystem;
+        
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            // Create particle system
+            const particleCount = 1000;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            const sizes = new Float32Array(particleCount);
+            
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 50;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 50;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
+                
+                // Random colors (purple, blue, pink theme)
+                const colorChoice = Math.random();
+                if (colorChoice < 0.33) {
+                    colors[i * 3] = 0.42; colors[i * 3 + 1] = 0.27; colors[i * 3 + 2] = 0.76; // Purple
+                } else if (colorChoice < 0.66) {
+                    colors[i * 3] = 0.23; colors[i * 3 + 1] = 0.51; colors[i * 3 + 2] = 0.96; // Blue
+                } else {
+                    colors[i * 3] = 0.93; colors[i * 3 + 1] = 0.28; colors[i * 3 + 2] = 0.60; // Pink
+                }
+                
+                sizes[i] = Math.random() * 2;
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+            
+            const material = new THREE.PointsMaterial({
+                size: 1,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            particleSystem = new THREE.Points(geometry, material);
+            scene.add(particleSystem);
+            
+            camera.position.z = 30;
+            
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                particleSystem.rotation.x += 0.0005;
+                particleSystem.rotation.y += 0.001;
+                
+                // Pulse effect based on energy
+                const scale = 1 + Math.sin(Date.now() * 0.001) * 0.1 + (gameState.energyPerSecond / 10000);
+                particleSystem.scale.set(scale, scale, scale);
+                
+                renderer.render(scene, camera);
+            }
+            animate();
+            
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+        
+        // Number formatting
+        function formatNumber(num) {
+            if (num < 1000) return Math.floor(num).toString();
+            if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
+            if (num < 1000000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num < 1000000000000) return (num / 1000000000).toFixed(1) + 'B';
+            return (num / 1000000000000).toFixed(1) + 'T';
+        }
+        
+        // Update display
+        function updateDisplay() {
+            document.getElementById('energy-display').textContent = formatNumber(gameState.energy);
+            document.getElementById('per-second').textContent = formatNumber(gameState.energyPerSecond) + ' energy/sec';
+            document.getElementById('click-power').textContent = formatNumber(gameState.clickPower);
+            
+            // Update stats
+            document.getElementById('stat-clicks').textContent = formatNumber(gameState.totalClicks);
+            document.getElementById('stat-total-energy').textContent = formatNumber(gameState.totalEnergy);
+            document.getElementById('stat-universes').textContent = gameState.universesCreated;
+            document.getElementById('stat-shards').textContent = gameState.cosmicShards;
+            
+            const playTime = Math.floor((Date.now() - gameState.startTime) / 1000);
+            document.getElementById('stat-playtime').textContent = formatTime(playTime);
+            
+            // Update prestige
+            const prestigeGain = calculatePrestigeGain();
+            document.getElementById('prestige-amount').textContent = prestigeGain + ' Cosmic Shards';
+            document.getElementById('prestige-btn').disabled = prestigeGain < 1;
+            
+            // Update upgrades
+            updateUpgradeDisplay();
+        }
+        
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            return h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m ${s}s` : `${s}s`;
+        }
+        
+        // Click handler
+        document.getElementById('main-clicker').addEventListener('click', (e) => {
+            gameState.energy += gameState.clickPower;
+            gameState.totalEnergy += gameState.clickPower;
+            gameState.totalClicks++;
+            
+            // Create floating text
+            createFloatingText(e.pageX, e.pageY, '+' + formatNumber(gameState.clickPower));
+            
+            // Add click effect to particles
+            if (particleSystem) {
+                particleSystem.rotation.x += 0.1;
+                particleSystem.rotation.y += 0.1;
+            }
+            
+            updateDisplay();
+            checkAchievements();
+        });
+        
+        function createFloatingText(x, y, text) {
+            const elem = document.createElement('div');
+            elem.className = 'particle-text';
+            elem.textContent = text;
+            elem.style.left = x + 'px';
+            elem.style.top = y + 'px';
+            document.body.appendChild(elem);
+            
+            setTimeout(() => elem.remove(), 2000);
+        }
+        
+        // Upgrade system
+        function updateUpgradeDisplay() {
+            const container = document.getElementById('upgrades-list');
+            container.innerHTML = '';
+            
+            for (const [key, upgrade] of Object.entries(gameState.upgrades)) {
+                const def = upgradeDefinitions[key];
+                const cost = calculateUpgradeCost(key);
+                const canAfford = gameState.energy >= cost;
+                const isMaxed = def.maxLevel && upgrade.level >= def.maxLevel;
+                
+                const div = document.createElement('div');
+                div.className = `upgrade-item ${canAfford ? 'can-afford' : ''} ${isMaxed ? 'maxed' : ''}`;
+                
+                let effect = '';
+                if (upgrade.baseProduction) {
+                    effect = `+${formatNumber(upgrade.baseProduction * upgrade.level)} energy/sec`;
+                } else if (upgrade.multiplier) {
+                    effect = `Click power x${upgrade.level + 1}`;
+                }
+                
+                div.innerHTML = `
+                    <div class="upgrade-header">
+                        <span class="upgrade-name">${def.icon} ${def.name}</span>
+                        <span class="upgrade-level">Lvl ${upgrade.level}</span>
+                    </div>
+                    <div class="upgrade-desc">${def.desc}</div>
+                    ${effect ? `<div class="upgrade-effect">Current: ${effect}</div>` : ''}
+                    <div class="upgrade-cost">${isMaxed ? 'MAXED' : 'Cost: ' + formatNumber(cost)}</div>
+                `;
+                
+                if (!isMaxed) {
+                    div.addEventListener('click', () => buyUpgrade(key));
+                }
+                
+                container.appendChild(div);
+            }
+        }
+        
+        function calculateUpgradeCost(upgradeKey) {
+            const upgrade = gameState.upgrades[upgradeKey];
+            const def = upgradeDefinitions[upgradeKey];
+            return Math.floor(upgrade.cost * Math.pow(def.costMultiplier, upgrade.level));
+        }
+        
+        function buyUpgrade(upgradeKey) {
+            const cost = calculateUpgradeCost(upgradeKey);
+            const def = upgradeDefinitions[upgradeKey];
+            
+            if (gameState.energy >= cost && (!def.maxLevel || gameState.upgrades[upgradeKey].level < def.maxLevel)) {
+                gameState.energy -= cost;
+                gameState.upgrades[upgradeKey].level++;
+                
+                // Apply effects
+                if (upgradeKey === 'clickBoost') {
+                    gameState.clickPower = 1 + gameState.upgrades.clickBoost.level;
+                } else if (upgradeKey === 'quantumClick') {
+                    gameState.clickPower = (1 + gameState.upgrades.clickBoost.level) * (1 + gameState.upgrades.quantumClick.level * 10);
+                }
+                
+                calculateProduction();
+                updateDisplay();
+                checkAchievements();
+            }
+        }
+        
+        function calculateProduction() {
+            let production = 0;
+            
+            for (const [key, upgrade] of Object.entries(gameState.upgrades)) {
+                if (upgrade.baseProduction) {
+                    production += upgrade.baseProduction * upgrade.level;
+                }
+            }
+            
+            // Apply prestige multiplier
+            production *= (1 + gameState.cosmicShards * 0.1);
+            
+            gameState.energyPerSecond = production;
+        }
+        
+        // Game loop
+        function gameLoop() {
+            const now = Date.now();
+            const delta = (now - lastUpdate) / 1000;
+            lastUpdate = now;
+            
+            // Generate resources
+            if (gameState.energyPerSecond > 0) {
+                const generated = gameState.energyPerSecond * delta;
+                gameState.energy += generated;
+                gameState.totalEnergy += generated;
+            }
+            
+            updateDisplay();
+            
+            // Auto save every 30 seconds
+            if (now - gameState.lastSave > 30000) {
+                saveGame();
+            }
+        }
+        
+        let lastUpdate = Date.now();
+        setInterval(gameLoop, 50);
+        
+        // Save/Load
+        function saveGame() {
+            localStorage.setItem('cosmicForgeState', JSON.stringify(gameState));
+            gameState.lastSave = Date.now();
+            
+            // Show save notification
+            const notification = document.getElementById('save-notification');
+            notification.classList.add('show');
+            setTimeout(() => notification.classList.remove('show'), 2000);
+        }
+        
+        function loadGame() {
+            const saved = localStorage.getItem('cosmicForgeState');
+            if (saved) {
+                gameState = JSON.parse(saved);
+                
+                // Calculate offline progress
+                const offlineTime = (Date.now() - gameState.lastSave) / 1000;
+                const offlineProduction = Math.min(offlineTime * gameState.energyPerSecond, gameState.energyPerSecond * 3600); // Max 1 hour
+                
+                if (offlineProduction > 0) {
+                    gameState.energy += offlineProduction;
+                    gameState.totalEnergy += offlineProduction;
+                    
+                    setTimeout(() => {
+                        alert(`Welcome back! You earned ${formatNumber(offlineProduction)} energy while away.`);
+                    }, 1000);
+                }
+                
+                // Recalculate values
+                calculateProduction();
+                
+                // Apply click upgrades
+                if (gameState.upgrades.quantumClick.level > 0) {
+                    gameState.clickPower = (1 + gameState.upgrades.clickBoost.level) * (1 + gameState.upgrades.quantumClick.level * 10);
+                } else if (gameState.upgrades.clickBoost.level > 0) {
+                    gameState.clickPower = 1 + gameState.upgrades.clickBoost.level;
+                }
+            }
+        }
+        
+        // Prestige system
+        function calculatePrestigeGain() {
+            return Math.floor(Math.sqrt(gameState.totalEnergy / 1000000));
+        }
+        
+        document.getElementById('prestige-btn').addEventListener('click', () => {
+            const gain = calculatePrestigeGain();
+            if (gain >= 1) {
+                if (confirm(`Reset everything to gain ${gain} Cosmic Shards? This will boost all production by ${gain * 10}%`)) {
+                    // Save prestige data
+                    gameState.cosmicShards += gain;
+                    gameState.universesCreated++;
+                    
+                    // Reset game but keep prestige
+                    const prestigeData = {
+                        cosmicShards: gameState.cosmicShards,
+                        universesCreated: gameState.universesCreated,
+                        achievements: gameState.achievements,
+                        totalClicks: gameState.totalClicks,
+                        startTime: gameState.startTime
+                    };
+                    
+                    // Reset upgrades and resources
+                    gameState = {
+                        energy: 0,
+                        totalEnergy: 0,
+                        energyPerSecond: 0,
+                        clickPower: 1,
+                        lastSave: Date.now(),
+                        upgrades: {
+                            autoCollector: { level: 0, cost: 10, baseProduction: 0.1, owned: 0 },
+                            cosmicLens: { level: 0, cost: 100, baseProduction: 1, owned: 0 },
+                            quantumReactor: { level: 0, cost: 1000, baseProduction: 10, owned: 0 },
+                            stellarForge: { level: 0, cost: 10000, baseProduction: 100, owned: 0 },
+                            galaxyEngine: { level: 0, cost: 100000, baseProduction: 1000, owned: 0 },
+                            clickBoost: { level: 0, cost: 50, multiplier: 2, owned: 0 },
+                            quantumClick: { level: 0, cost: 5000, multiplier: 10, owned: 0 }
+                        },
+                        ...prestigeData
+                    };
+                    
+                    // Big Bang effect
+                    if (particleSystem) {
+                        particleSystem.scale.set(10, 10, 10);
+                        setTimeout(() => particleSystem.scale.set(1, 1, 1), 1000);
+                    }
+                    
+                    saveGame();
+                    updateDisplay();
+                }
+            }
+        });
+        
+        // Achievements
+        function checkAchievements() {
+            achievements.forEach(achievement => {
+                if (!gameState.achievements[achievement.id] && achievement.check()) {
+                    gameState.achievements[achievement.id] = true;
+                    
+                    // Show achievement notification
+                    createFloatingText(
+                        window.innerWidth / 2,
+                        window.innerHeight / 2,
+                        `🏆 ${achievement.name} unlocked!`
+                    );
+                    
+                    updateAchievementDisplay();
+                }
+            });
+        }
+        
+        function updateAchievementDisplay() {
+            const container = document.getElementById('achievements-list');
+            container.innerHTML = '';
+            
+            achievements.forEach(achievement => {
+                const unlocked = gameState.achievements[achievement.id];
+                const div = document.createElement('div');
+                div.className = `achievement-item ${unlocked ? 'unlocked' : ''}`;
+                div.innerHTML = `
+                    <div class="achievement-icon">${achievement.icon}</div>
+                    <div class="achievement-info">
+                        <div class="achievement-name">${achievement.name}</div>
+                        <div class="achievement-desc">${achievement.desc}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.style.display = 'none';
+                });
+                
+                const tabName = btn.getAttribute('data-tab');
+                if (tabName === 'stats') {
+                    document.getElementById('stats-content').style.display = 'block';
+                } else if (tabName === 'achievements') {
+                    document.getElementById('achievements-content').style.display = 'block';
+                    updateAchievementDisplay();
+                }
+            });
+        });
+        
+        // Initialize
+        initThreeJS();
+        loadGame();
+        updateDisplay();
+        updateAchievementDisplay();
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 's' && e.ctrlKey) {
+                e.preventDefault();
+                saveGame();
+            }
+        });
+    </script>
+</body>
+</html>

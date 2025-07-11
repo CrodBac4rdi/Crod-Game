@@ -1,0 +1,17 @@
+# Archive
+_archive/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Dependencies (if we add any)
+node_modules/
+
+# Local files
+*.local
+.env
