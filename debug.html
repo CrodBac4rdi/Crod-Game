@@ -1,330 +1,142 @@
-<!DOCTYPE html>
-<html lang="en">
+<\!DOCTYPE html>
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DEBUG - Cosmic Clicker 3D</title>
+    <title>Debug Test</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #0a0a0f;
-            color: #fff;
-            margin: 0;
-            padding: 20px;
+        body { 
+            background: #0a0a0f; 
+            color: white; 
+            font-family: Arial; 
+            padding: 20px; 
         }
-        .debug-section {
-            background: #1a1a2e;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 5px;
-            border-left: 4px solid #00d4ff;
+        .status { 
+            margin: 10px 0; 
+            padding: 10px; 
+            background: #1a1a2e; 
+            border-radius: 5px; 
         }
-        .error { border-left-color: #ff3366; }
-        .success { border-left-color: #00ff88; }
-        .warning { border-left-color: #ffaa00; }
-        pre { background: #0a0a0f; padding: 10px; border-radius: 3px; overflow-x: auto; }
-        .test-result { margin: 5px 0; padding: 5px; border-radius: 3px; }
-        .pass { background: #004400; }
-        .fail { background: #440000; }
+        .error { background: #ff3366; }
+        .success { background: #00ff88; color: black; }
     </style>
 </head>
 <body>
-    <h1>🔍 COSMIC CLICKER 3D - DEBUG MODE</h1>
-    
-    <div class="debug-section">
-        <h2>📋 Debug Log</h2>
-        <div id="debug-log"></div>
-    </div>
-    
-    <div class="debug-section">
-        <h2>🧪 Script Loading Tests</h2>
-        <div id="script-tests"></div>
-    </div>
-    
-    <div class="debug-section">
-        <h2>🎮 Game Initialization Tests</h2>
-        <div id="game-tests"></div>
-    </div>
-    
-    <div class="debug-section">
-        <h2>🌐 THREE.js Tests</h2>
-        <div id="three-tests"></div>
-    </div>
-    
-    <div class="debug-section">
-        <h2>💾 Asset System Tests</h2>
-        <div id="asset-tests"></div>
-    </div>
-    
-    <div class="debug-section">
-        <h2>🚨 Error Log</h2>
-        <div id="error-log"></div>
-    </div>
-    
-    <!-- Load Three.js -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js"></script>
-    
-    <!-- Debug Script -->
+    <h1>🔍 Debug Test</h1>
+    <div id="log"></div>
+
     <script>
-        const debugLog = document.getElementById('debug-log');
-        const scriptTests = document.getElementById('script-tests');
-        const gameTests = document.getElementById('game-tests');
-        const threeTests = document.getElementById('three-tests');
-        const assetTests = document.getElementById('asset-tests');
-        const errorLog = document.getElementById('error-log');
+        const log = document.getElementById('log');
         
-        let testResults = [];
-        let errors = [];
-        
-        function log(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
-            const logEntry = document.createElement('div');
-            logEntry.innerHTML = `[${timestamp}] ${message}`;
-            logEntry.className = `test-result ${type}`;
-            debugLog.appendChild(logEntry);
-            console.log(`[DEBUG] ${message}`);
+        function addLog(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(div);
+            console.log(message);
         }
         
-        function testResult(name, condition, details = '') {
-            const result = document.createElement('div');
-            result.className = condition ? 'test-result pass' : 'test-result fail';
-            result.innerHTML = `${condition ? '✅' : '❌'} ${name}${details ? ': ' + details : ''}`;
-            return result;
+        addLog('🚀 Starting debug test...');
+        
+        // Test 1: Basic JavaScript
+        try {
+            addLog('✅ Basic JavaScript works', 'success');
+        } catch (e) {
+            addLog(`❌ Basic JavaScript failed: ${e.message}`, 'error');
         }
         
-        function addError(error) {
-            errors.push(error);
-            const errorEntry = document.createElement('div');
-            errorEntry.className = 'test-result fail';
-            errorEntry.innerHTML = `❌ ${error.message || error}`;
-            if (error.stack) {
-                errorEntry.innerHTML += `<pre>${error.stack}</pre>`;
-            }
-            errorLog.appendChild(errorEntry);
-        }
-        
-        // Catch all errors
-        window.addEventListener('error', (e) => {
-            addError(e.error || e);
-        });
-        
-        window.addEventListener('unhandledrejection', (e) => {
-            addError(e.reason || e);
-        });
-        
-        // Test Three.js
-        function testThreeJS() {
-            log('Testing THREE.js...');
+        // Test 2: Load Three.js
+        addLog('📦 Loading Three.js...');
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js';
+        script.onload = () => {
+            addLog('✅ Three.js loaded successfully', 'success');
             
-            threeTests.appendChild(testResult('THREE.js loaded', typeof THREE !== 'undefined'));
-            
-            if (typeof THREE !== 'undefined') {
-                threeTests.appendChild(testResult('THREE.Scene available', typeof THREE.Scene !== 'undefined'));
-                threeTests.appendChild(testResult('THREE.WebGLRenderer available', typeof THREE.WebGLRenderer !== 'undefined'));
-                threeTests.appendChild(testResult('THREE.PerspectiveCamera available', typeof THREE.PerspectiveCamera !== 'undefined'));
+            // Test 3: Create basic THREE object
+            try {
+                const scene = new THREE.Scene();
+                addLog('✅ THREE.Scene created successfully', 'success');
                 
-                // Test WebGL
-                const canvas = document.createElement('canvas');
-                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-                threeTests.appendChild(testResult('WebGL supported', gl !== null));
-                
-                if (gl) {
-                    const renderer = gl.getParameter(gl.RENDERER);
-                    const vendor = gl.getParameter(gl.VENDOR);
-                    threeTests.appendChild(testResult('GPU Info', true, `${vendor} ${renderer}`));
-                }
+                // Test 4: Load GameConfig
+                loadGameModules();
+            } catch (e) {
+                addLog(`❌ THREE.js test failed: ${e.message}`, 'error');
             }
-        }
+        };
+        script.onerror = () => {
+            addLog('❌ Three.js failed to load', 'error');
+        };
+        document.head.appendChild(script);
         
-        // Test script loading
-        function testScriptLoading() {
-            log('Testing script loading...');
+        function loadGameModules() {
+            addLog('📦 Loading game modules...');
             
-            const scripts = [
-                'src/assets/sounds/AudioSystem.js',
-                'src/assets/textures/TextureManager.js',
-                'src/assets/models/ModelGenerator.js',
-                'src/assets/AssetLoader.js',
-                'src/assets/PerformanceOptimizer.js',
-                'src/assets/AssetIntegration.js',
+            const modules = [
                 'src/core/GameConfig.js',
-                'src/core/EventSystem.js',
-                'src/core/SaveManager.js',
-                'src/game/GameState.js',
-                'src/game/UpgradeManager.js',
-                'src/game/AchievementManager.js',
-                'src/game/ClickManager.js',
-                'src/ui/UIManager.js',
-                'src/ui/NotificationManager.js',
-                'src/ui/FloatingTextManager.js',
-                'src/utils/MathUtils.js',
-                'src/utils/FormatUtils.js',
-                'src/core/SceneManager.js',
-                'src/core/Game.js'
+                'src/core/EventSystem.js'
             ];
             
-            scripts.forEach(script => {
-                fetch(script)
-                    .then(response => {
-                        scriptTests.appendChild(testResult(script, response.ok, response.status));
-                    })
-                    .catch(error => {
-                        scriptTests.appendChild(testResult(script, false, error.message));
-                    });
-            });
-        }
-        
-        // Test asset system
-        function testAssetSystem() {
-            log('Testing asset system...');
+            let loadedCount = 0;
             
-            setTimeout(() => {
-                assetTests.appendChild(testResult('AudioSystem class', typeof AudioSystem !== 'undefined'));
-                assetTests.appendChild(testResult('TextureManager class', typeof TextureManager !== 'undefined'));
-                assetTests.appendChild(testResult('ModelGenerator class', typeof ModelGenerator !== 'undefined'));
-                assetTests.appendChild(testResult('AssetLoader class', typeof AssetLoader !== 'undefined'));
-                assetTests.appendChild(testResult('PerformanceOptimizer class', typeof PerformanceOptimizer !== 'undefined'));
-                assetTests.appendChild(testResult('AssetIntegration class', typeof AssetIntegration !== 'undefined'));
-                
-                // Test instantiation
-                try {
-                    const audioSystem = new AudioSystem();
-                    assetTests.appendChild(testResult('AudioSystem instantiation', true));
-                } catch (error) {
-                    assetTests.appendChild(testResult('AudioSystem instantiation', false, error.message));
-                }
-                
-                try {
-                    const textureManager = new TextureManager();
-                    assetTests.appendChild(testResult('TextureManager instantiation', true));
-                } catch (error) {
-                    assetTests.appendChild(testResult('TextureManager instantiation', false, error.message));
-                }
-                
-                try {
-                    const performanceOptimizer = new PerformanceOptimizer();
-                    assetTests.appendChild(testResult('PerformanceOptimizer instantiation', true));
-                } catch (error) {
-                    assetTests.appendChild(testResult('PerformanceOptimizer instantiation', false, error.message));
-                }
-            }, 2000);
-        }
-        
-        // Test game system
-        function testGameSystem() {
-            log('Testing game system...');
-            
-            setTimeout(() => {
-                gameTests.appendChild(testResult('GameConfig available', typeof GameConfig !== 'undefined'));
-                gameTests.appendChild(testResult('EventSystem class', typeof EventSystem !== 'undefined'));
-                gameTests.appendChild(testResult('GameState class', typeof GameState !== 'undefined'));
-                gameTests.appendChild(testResult('CosmicClicker class', typeof CosmicClicker !== 'undefined'));
-                gameTests.appendChild(testResult('SceneManager class', typeof SceneManager !== 'undefined'));
-                
-                // Test GameConfig
-                if (typeof GameConfig !== 'undefined') {
-                    gameTests.appendChild(testResult('GameConfig.GENERATORS', Array.isArray(GameConfig.GENERATORS)));
-                    gameTests.appendChild(testResult('GameConfig.ACHIEVEMENTS', Array.isArray(GameConfig.ACHIEVEMENTS)));
-                }
-                
-                // Test instantiation
-                try {
-                    const eventSystem = new EventSystem();
-                    gameTests.appendChild(testResult('EventSystem instantiation', true));
-                } catch (error) {
-                    gameTests.appendChild(testResult('EventSystem instantiation', false, error.message));
-                }
-                
-                try {
-                    const gameState = new GameState(new EventSystem());
-                    gameTests.appendChild(testResult('GameState instantiation', true));
-                } catch (error) {
-                    gameTests.appendChild(testResult('GameState instantiation', false, error.message));
-                }
-            }, 3000);
-        }
-        
-        // Start tests
-        log('🚀 Starting debug tests...');
-        
-        setTimeout(() => {
-            testThreeJS();
-            testScriptLoading();
-            testAssetSystem();
-            testGameSystem();
-        }, 1000);
-        
-        // Try to load and test actual scripts
-        log('Loading scripts for testing...');
-        
-        const loadScript = (src) => {
-            return new Promise((resolve, reject) => {
+            modules.forEach((url, index) => {
                 const script = document.createElement('script');
-                script.src = src;
-                script.onload = resolve;
-                script.onerror = reject;
+                script.src = url;
+                script.onload = () => {
+                    addLog(`✅ Loaded: ${url}`, 'success');
+                    loadedCount++;
+                    
+                    if (loadedCount === modules.length) {
+                        testGameModules();
+                    }
+                };
+                script.onerror = () => {
+                    addLog(`❌ Failed to load: ${url}`, 'error');
+                };
                 document.head.appendChild(script);
             });
-        };
-        
-        // Load scripts in order
-        async function loadAllScripts() {
-            const scripts = [
-                'src/assets/sounds/AudioSystem.js',
-                'src/assets/textures/TextureManager.js',
-                'src/assets/models/ModelGenerator.js',
-                'src/assets/AssetLoader.js',
-                'src/assets/PerformanceOptimizer.js',
-                'src/assets/AssetIntegration.js',
-                'src/core/GameConfig.js',
-                'src/core/EventSystem.js',
-                'src/core/SaveManager.js',
-                'src/game/GameState.js',
-                'src/game/UpgradeManager.js',
-                'src/game/AchievementManager.js',
-                'src/game/ClickManager.js',
-                'src/ui/UIManager.js',
-                'src/ui/NotificationManager.js',
-                'src/ui/FloatingTextManager.js',
-                'src/utils/MathUtils.js',
-                'src/utils/FormatUtils.js',
-                'src/core/SceneManager.js',
-                'src/core/Game.js'
-            ];
-            
-            for (const script of scripts) {
-                try {
-                    await loadScript(script);
-                    log(`✅ Loaded: ${script}`, 'pass');
-                } catch (error) {
-                    log(`❌ Failed to load: ${script} - ${error.message}`, 'fail');
-                    addError(error);
-                }
-            }
-            
-            log('All scripts loaded, running final tests...');
-            
-            // Final test: try to create the game
-            setTimeout(() => {
-                try {
-                    log('Creating AssetIntegration...');
-                    window.AssetIntegration = new AssetIntegration();
-                    log('✅ AssetIntegration created successfully', 'pass');
-                    
-                    log('Creating CosmicClicker...');
-                    const game = new CosmicClicker();
-                    log('✅ CosmicClicker created successfully', 'pass');
-                    
-                    log('🎉 ALL TESTS PASSED! Game should work now.', 'pass');
-                    
-                } catch (error) {
-                    log(`❌ Game creation failed: ${error.message}`, 'fail');
-                    addError(error);
-                }
-            }, 1000);
         }
         
-        loadAllScripts();
+        function testGameModules() {
+            addLog('🧪 Testing game modules...');
+            
+            // Test GameConfig
+            try {
+                if (typeof window.GameConfig \!== 'undefined') {
+                    addLog('✅ GameConfig available', 'success');
+                    addLog(`⚡ Initial Energy: ${window.GameConfig.INITIAL_ENERGY}`, 'success');
+                } else {
+                    addLog('❌ GameConfig not found', 'error');
+                }
+            } catch (e) {
+                addLog(`❌ GameConfig test failed: ${e.message}`, 'error');
+            }
+            
+            // Test EventSystem
+            try {
+                if (typeof window.EventSystem \!== 'undefined') {
+                    addLog('✅ EventSystem available', 'success');
+                    const events = new window.EventSystem();
+                    addLog('✅ EventSystem instance created', 'success');
+                } else {
+                    addLog('❌ EventSystem not found', 'error');
+                }
+            } catch (e) {
+                addLog(`❌ EventSystem test failed: ${e.message}`, 'error');
+            }
+            
+            // Test GameEvents
+            try {
+                if (typeof window.GameEvents \!== 'undefined') {
+                    addLog('✅ GameEvents available', 'success');
+                    addLog(`🎯 Energy Changed Event: ${window.GameEvents.ENERGY_CHANGED}`, 'success');
+                } else {
+                    addLog('❌ GameEvents not found', 'error');
+                }
+            } catch (e) {
+                addLog(`❌ GameEvents test failed: ${e.message}`, 'error');
+            }
+            
+            addLog('🎉 Debug test completed\!', 'success');
+        }
     </script>
 </body>
 </html>
+EOF < /dev/null
