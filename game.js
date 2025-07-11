@@ -1,266 +1,241 @@
-// SINGLE UNIFIED GAME OBJECT - NO MORE CHAOS
-window.GAME = {
-    // State
-    loaded: false,
-    running: false,
-    error: null,
-    
-    // Core systems
-    scene: null,
-    renderer: null,
-    camera: null,
-    
-    // Game data
+// Unified Cosmic Clicker Game
+const GAME = {
+    // Core state
     energy: 0,
     clicks: 0,
     level: 1,
+    running: false,
     
-    // Initialize everything step by step
+    // 3D objects
+    scene: null,
+    camera: null,
+    renderer: null,
+    orb: null,
+    
+    // Debug system
+    debug: (msg) => {
+        console.log(`[GAME] ${msg}`);
+    },
+    
+    // Initialize game
     async init() {
         try {
-            this.log('🚀 Starting UNIFIED game initialization...');
+            this.debug('🚀 Starting unified game initialization...');
             
-            // Step 1: Check THREE.js
-            if (typeof THREE === 'undefined') {
-                throw new Error('THREE.js not loaded');
-            }
-            this.log('✅ THREE.js available');
+            // Update loading text
+            const loadingText = document.getElementById('loading-text');
+            if (loadingText) loadingText.textContent = 'Setting up 3D scene...';
             
-            // Step 2: Get canvas
-            const canvas = document.getElementById('game-canvas');
-            if (!canvas) {
-                throw new Error('Canvas not found');
-            }
-            this.log('✅ Canvas found');
+            // Initialize 3D scene
+            await this.initScene();
             
-            // Step 3: Create renderer
-            this.renderer = new THREE.WebGLRenderer({ canvas });
-            this.renderer.setSize(window.innerWidth, window.innerHeight);
-            this.renderer.setClearColor(0x000011);
-            this.log('✅ Renderer created');
+            if (loadingText) loadingText.textContent = 'Setting up game logic...';
             
-            // Step 4: Create camera
-            this.camera = new THREE.PerspectiveCamera(
-                75, 
-                window.innerWidth / window.innerHeight, 
-                0.1, 
-                1000
-            );
-            this.camera.position.z = 30;
-            this.log('✅ Camera created');
+            // Setup game logic
+            this.setupGameLogic();
             
-            // Step 5: Create scene
-            this.scene = new THREE.Scene();
-            this.scene.fog = new THREE.Fog(0x000011, 50, 200);
-            this.log('✅ Scene created');
+            if (loadingText) loadingText.textContent = 'Ready to play\!';
             
-            // Step 6: Create cosmic orb
-            this.createOrb();
-            this.log('✅ Orb created');
-            
-            // Step 7: Create stars
-            this.createStars();
-            this.log('✅ Stars created');
-            
-            // Step 8: Setup events
-            this.setupEvents();
-            this.log('✅ Events setup');
-            
-            // Step 9: Setup UI
-            this.setupUI();
-            this.log('✅ UI setup');
-            
-            // Step 10: Start game loop
-            this.startGameLoop();
-            this.log('✅ Game loop started');
-            
-            // Step 11: Hide loading screen
-            this.hideLoadingScreen();
-            this.log('✅ Loading screen hidden');
-            
-            this.loaded = true;
-            this.running = true;
-            this.log('🎉 GAME READY!');
+            // Show game, hide loading
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('game-container').style.display = 'block';
+                this.running = true;
+                this.debug('✅ Game is now running\!');
+            }, 500);
             
         } catch (error) {
-            this.error = error;
-            this.showError(error);
-            console.error('Game initialization failed:', error);
+            this.debug('❌ Initialization failed: ' + error.message);
+            throw error;
         }
     },
     
-    createOrb() {
-        const geometry = new THREE.SphereGeometry(5, 32, 32);
-        const material = new THREE.MeshBasicMaterial({
-            color: 0x00ffff,
-            transparent: true,
-            opacity: 0.8
-        });
+    // Initialize 3D scene
+    async initScene() {
+        this.debug('Creating 3D scene...');
         
-        this.orb = new THREE.Mesh(geometry, material);
-        this.scene.add(this.orb);
-        
-        // Add glow
-        const glowGeometry = new THREE.SphereGeometry(6, 16, 16);
-        const glowMaterial = new THREE.MeshBasicMaterial({
-            color: 0x00ffff,
-            transparent: true,
-            opacity: 0.2,
-            side: THREE.BackSide
-        });
-        const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-        this.orb.add(glow);
-    },
-    
-    createStars() {
-        const starsGeometry = new THREE.BufferGeometry();
-        const starPositions = [];
-        
-        for (let i = 0; i < 1000; i++) {
-            starPositions.push(
-                (Math.random() - 0.5) * 200,
-                (Math.random() - 0.5) * 200,
-                (Math.random() - 0.5) * 200
-            );
-        }
-        
-        starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
-        
-        const starsMaterial = new THREE.PointsMaterial({
-            color: 0xffffff,
-            size: 0.5
-        });
-        
-        this.stars = new THREE.Points(starsGeometry, starsMaterial);
-        this.scene.add(this.stars);
-    },
-    
-    setupEvents() {
-        // Canvas click
         const canvas = document.getElementById('game-canvas');
-        canvas.addEventListener('click', (event) => {
-            this.handleClick(event);
-        });
         
-        // Window resize
+        // Scene
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x0a0a0f);
+        this.scene.fog = new THREE.Fog(0x0a0a0f, 50, 200);
+        
+        // Camera
+        this.camera = new THREE.PerspectiveCamera(
+            75, 
+            window.innerWidth / window.innerHeight, 
+            0.1, 
+            1000
+        );
+        this.camera.position.z = 30;
+        
+        // Renderer
+        this.renderer = new THREE.WebGLRenderer({ 
+            canvas: canvas,
+            antialias: true
+        });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(window.devicePixelRatio);
+        
+        // Create cosmic orb
+        this.createCosmicOrb();
+        
+        // Lights
+        this.setupLights();
+        
+        // Start animation loop
+        this.animate();
+        
+        // Handle resize
         window.addEventListener('resize', () => {
             this.camera.aspect = window.innerWidth / window.innerHeight;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
         });
-    },
-    
-    setupUI() {
-        // Update energy display
-        this.updateUI();
-    },
-    
-    handleClick(event) {
-        if (!this.running) return;
         
-        // Simple click detection - if clicked anywhere on canvas
-        this.energy += 1;
-        this.clicks += 1;
+        this.debug('✅ 3D scene created successfully');
+    },
+    
+    // Create the cosmic orb
+    createCosmicOrb() {
+        const geometry = new THREE.SphereGeometry(5, 64, 64);
+        
+        // Glowing material
+        const material = new THREE.MeshPhongMaterial({
+            color: 0x00ffff,
+            emissive: 0x004444,
+            shininess: 100,
+            transparent: true,
+            opacity: 0.9
+        });
+        
+        this.orb = new THREE.Mesh(geometry, material);
+        this.scene.add(this.orb);
+        
+        // Add glow effect
+        const glowGeometry = new THREE.SphereGeometry(6, 32, 32);
+        const glowMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00ffff,
+            transparent: true,
+            opacity: 0.1,
+            side: THREE.BackSide
+        });
+        const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+        this.orb.add(glow);
+        
+        this.debug('✅ Cosmic orb created');
+    },
+    
+    // Setup lighting
+    setupLights() {
+        // Ambient light
+        const ambient = new THREE.AmbientLight(0x404040, 0.5);
+        this.scene.add(ambient);
+        
+        // Directional light
+        const directional = new THREE.DirectionalLight(0xffffff, 1);
+        directional.position.set(10, 10, 5);
+        this.scene.add(directional);
+        
+        // Point lights for color
+        const pointLight1 = new THREE.PointLight(0x00ffff, 1, 50);
+        pointLight1.position.set(20, 0, 0);
+        this.scene.add(pointLight1);
+        
+        const pointLight2 = new THREE.PointLight(0xff00ff, 1, 50);
+        pointLight2.position.set(-20, 0, 0);
+        this.scene.add(pointLight2);
+        
+        this.debug('✅ Lighting setup complete');
+    },
+    
+    // Setup game logic
+    setupGameLogic() {
+        // Click handler
+        const canvas = document.getElementById('game-canvas');
+        canvas.addEventListener('click', (event) => {
+            this.handleClick();
+        });
+        
+        // Update UI
+        this.updateUI();
+        
+        this.debug('✅ Game logic setup complete');
+    },
+    
+    // Handle click/tap
+    handleClick() {
+        if (\!this.running) return;
+        
+        this.clicks++;
+        this.energy++;
         
         // Orb animation
         if (this.orb) {
-            this.orb.scale.setScalar(1.2);
+            this.orb.scale.setScalar(1.3);
             setTimeout(() => {
-                this.orb.scale.setScalar(1.0);
-            }, 100);
+                this.orb.scale.setScalar(1);
+            }, 150);
         }
         
+        // Update UI
         this.updateUI();
-        this.log(`Click! Energy: ${this.energy}`);
+        
+        // Level up logic
+        if (this.energy >= this.level * 100) {
+            this.levelUp();
+        }
     },
     
+    // Level up
+    levelUp() {
+        this.level++;
+        this.debug(`🎉 Level up\! Now level ${this.level}`);
+        this.updateUI();
+    },
+    
+    // Update UI
     updateUI() {
         const energyElement = document.getElementById('energy-value');
-        if (energyElement) {
-            energyElement.textContent = this.energy;
-        }
-        
+        const clicksElement = document.getElementById('clicks-value');
         const levelElement = document.getElementById('level-value');
-        if (levelElement) {
-            levelElement.textContent = this.level;
-        }
+        
+        if (energyElement) energyElement.textContent = this.energy;
+        if (clicksElement) clicksElement.textContent = this.clicks;
+        if (levelElement) levelElement.textContent = this.level;
     },
     
-    startGameLoop() {
-        const animate = () => {
-            if (!this.running) return;
-            
-            requestAnimationFrame(animate);
-            
-            // Animate orb
-            if (this.orb) {
-                this.orb.rotation.y += 0.01;
-                this.orb.position.y = Math.sin(Date.now() * 0.001) * 0.5;
-            }
-            
-            // Animate stars
-            if (this.stars) {
-                this.stars.rotation.y += 0.0005;
-            }
-            
-            // Render
-            this.renderer.render(this.scene, this.camera);
-        };
+    // Animation loop
+    animate() {
+        requestAnimationFrame(() => this.animate());
         
-        animate();
-    },
-    
-    hideLoadingScreen() {
-        const loadingScreen = document.getElementById('loading-screen');
-        const gameContainer = document.getElementById('game-container');
-        
-        if (loadingScreen) {
-            loadingScreen.style.display = 'none';
+        if (this.orb) {
+            // Rotate the orb
+            this.orb.rotation.y += 0.01;
+            this.orb.rotation.x += 0.005;
+            
+            // Floating animation
+            this.orb.position.y = Math.sin(Date.now() * 0.001) * 0.5;
         }
         
-        if (gameContainer) {
-            gameContainer.style.display = 'block';
-        }
+        // Render the scene
+        this.renderer.render(this.scene, this.camera);
     },
     
-    showError(error) {
-        const loadingText = document.getElementById('loading-text');
-        if (loadingText) {
-            loadingText.innerHTML = `
-                <div style="color: #ff3366; font-size: 16px; line-height: 1.4; text-align: center;">
-                    <strong>❌ Game Error</strong><br><br>
-                    ${error.message}<br><br>
-                    <button onclick="location.reload()" style="padding: 10px 20px; background: #00ffff; color: #000; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
-                        🔄 Reload Game
-                    </button>
-                </div>
-            `;
-        }
-    },
-    
-    log(message) {
-        console.log(`[GAME] ${message}`);
-        
-        // Also update loading text if still visible
-        const loadingText = document.getElementById('loading-text');
-        if (loadingText && !this.loaded) {
-            loadingText.textContent = message;
-        }
-    },
-    
-    // Public API
-    addEnergy(amount) {
-        this.energy += amount;
-        this.updateUI();
-    },
-    
+    // Get game stats for debugging
     getStats() {
         return {
             energy: this.energy,
             clicks: this.clicks,
             level: this.level,
             running: this.running,
-            loaded: this.loaded
+            hasOrb: \!\!this.orb,
+            hasScene: \!\!this.scene
         };
     }
 };
+
+// Make GAME globally accessible
+window.GAME = GAME;
+EOF < /dev/null
