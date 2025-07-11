@@ -23,7 +23,7 @@ window.SceneManager = class SceneManager {
         this.updatePerformanceSettings();
         
         // Animation
-        this.clock = new THREE.Clock();
+        this.clock = null; // Will be initialized when THREE is available
         this.orbRotation = 0;
         
         // Graphics settings
@@ -31,8 +31,9 @@ window.SceneManager = class SceneManager {
     }
     
     init(canvas) {
-        // Initialize mouse vector now that THREE is available
+        // Initialize mouse vector and clock now that THREE is available
         this.mouse = new THREE.Vector2();
+        this.clock = new THREE.Clock();
         
         // Create scene
         this.scene = new THREE.Scene();
@@ -377,6 +378,8 @@ window.SceneManager = class SceneManager {
         if (now - this.lastFrameTime < this.frameTime) {
             return;
         }
+        
+        if (!this.clock) return; // Safety check
         
         const deltaTime = this.clock.getDelta();
         const elapsedTime = this.clock.getElapsedTime();

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MINIMAL TEST - Cosmic Clicker 3D</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0a0f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .loading-progress {
+            width: 300px;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .loading-bar {
+            height: 100%;
+            background: #00d4ff;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        #game-container {
+            display: none;
+        }
+        canvas {
+            width: 100%;
+            height: 400px;
+            background: #000;
+            border: 2px solid #00d4ff;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            background: #1a1a2e;
+            border-radius: 5px;
+        }
+        .success { border-left: 4px solid #00ff88; }
+        .error { border-left: 4px solid #ff3366; }
+    </style>
+</head>
+<body>
+    <div id="loading-screen">
+        <h1>🚀 MINIMAL COSMIC CLICKER TEST</h1>
+        <div class="loading-progress">
+            <div class="loading-bar" id="loading-progress"></div>
+        </div>
+        <p id="loading-text">Initializing...</p>
+    </div>
+
+    <div id="game-container">
+        <h1>✅ GAME LOADED SUCCESSFULLY!</h1>
+        <canvas id="game-canvas"></canvas>
+        <div id="status-log"></div>
+    </div>
+    
+    <!-- Load Three.js -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js"></script>
+    
+    <!-- Load ONLY core files -->
+    <script src="src/core/GameConfig.js"></script>
+    <script src="src/core/EventSystem.js"></script>
+    <script src="src/core/SaveManager.js"></script>
+    <script src="src/game/GameState.js"></script>
+    <script src="src/game/UpgradeManager.js"></script>
+    <script src="src/game/AchievementManager.js"></script>
+    <script src="src/game/ClickManager.js"></script>
+    <script src="src/ui/UIManager.js"></script>
+    <script src="src/ui/NotificationManager.js"></script>
+    <script src="src/ui/FloatingTextManager.js"></script>
+    <script src="src/utils/MathUtils.js"></script>
+    <script src="src/utils/FormatUtils.js"></script>
+    <script src="src/core/SceneManager.js"></script>
+    <script src="src/core/Game.js"></script>
+    
+    <script>
+        const statusLog = document.getElementById('status-log');
+        const loadingProgress = document.getElementById('loading-progress');
+        const loadingText = document.getElementById('loading-text');
+        
+        function updateProgress(percent, message) {
+            loadingProgress.style.width = percent + '%';
+            loadingText.textContent = message;
+        }
+        
+        function addStatus(message, type = 'success') {
+            const status = document.createElement('div');
+            status.className = `status ${type}`;
+            status.textContent = message;
+            statusLog.appendChild(status);
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        function testSystem() {
+            updateProgress(10, 'Checking THREE.js...');
+            
+            setTimeout(() => {
+                if (typeof THREE === 'undefined') {
+                    addStatus('THREE.js not loaded!', 'error');
+                    return;
+                }
+                addStatus('THREE.js loaded successfully');
+                
+                updateProgress(20, 'Checking GameConfig...');
+                
+                setTimeout(() => {
+                    if (typeof GameConfig === 'undefined') {
+                        addStatus('GameConfig not loaded!', 'error');
+                        return;
+                    }
+                    addStatus('GameConfig loaded successfully');
+                    
+                    updateProgress(30, 'Checking EventSystem...');
+                    
+                    setTimeout(() => {
+                        if (typeof EventSystem === 'undefined') {
+                            addStatus('EventSystem not loaded!', 'error');
+                            return;
+                        }
+                        addStatus('EventSystem loaded successfully');
+                        
+                        updateProgress(50, 'Testing EventSystem...');
+                        
+                        setTimeout(() => {
+                            try {
+                                const eventSystem = new EventSystem();
+                                addStatus('EventSystem instantiated successfully');
+                                
+                                updateProgress(60, 'Testing GameState...');
+                                
+                                setTimeout(() => {
+                                    try {
+                                        const gameState = new GameState(eventSystem);
+                                        addStatus('GameState instantiated successfully');
+                                        
+                                        updateProgress(70, 'Testing SceneManager...');
+                                        
+                                        setTimeout(() => {
+                                            try {
+                                                const sceneManager = new SceneManager(eventSystem);
+                                                addStatus('SceneManager instantiated successfully');
+                                                
+                                                updateProgress(80, 'Testing CosmicClicker...');
+                                                
+                                                setTimeout(() => {
+                                                    try {
+                                                        const game = new CosmicClicker();
+                                                        addStatus('CosmicClicker instantiated successfully');
+                                                        
+                                                        updateProgress(90, 'Initializing game...');
+                                                        
+                                                        setTimeout(() => {
+                                                            try {
+                                                                game.init();
+                                                                addStatus('Game initialized successfully');
+                                                                
+                                                                updateProgress(100, 'Complete!');
+                                                                
+                                                                setTimeout(() => {
+                                                                    document.getElementById('loading-screen').style.display = 'none';
+                                                                    document.getElementById('game-container').style.display = 'block';
+                                                                    addStatus('🎉 ALL TESTS PASSED! Game is working!');
+                                                                }, 500);
+                                                                
+                                                            } catch (error) {
+                                                                addStatus(`Game init failed: ${error.message}`, 'error');
+                                                                console.error(error);
+                                                            }
+                                                        }, 500);
+                                                        
+                                                    } catch (error) {
+                                                        addStatus(`CosmicClicker creation failed: ${error.message}`, 'error');
+                                                        console.error(error);
+                                                    }
+                                                }, 500);
+                                                
+                                            } catch (error) {
+                                                addStatus(`SceneManager creation failed: ${error.message}`, 'error');
+                                                console.error(error);
+                                            }
+                                        }, 500);
+                                        
+                                    } catch (error) {
+                                        addStatus(`GameState creation failed: ${error.message}`, 'error');
+                                        console.error(error);
+                                    }
+                                }, 500);
+                                
+                            } catch (error) {
+                                addStatus(`EventSystem creation failed: ${error.message}`, 'error');
+                                console.error(error);
+                            }
+                        }, 500);
+                        
+                    }, 500);
+                    
+                }, 500);
+                
+            }, 500);
+        }
+        
+        // Catch all errors
+        window.addEventListener('error', (e) => {
+            addStatus(`JavaScript Error: ${e.message}`, 'error');
+            console.error(e);
+        });
+        
+        // Start test
+        setTimeout(() => {
+            addStatus('Starting minimal test...');
+            testSystem();
+        }, 1000);
+    </script>
+</body>
+</html>
