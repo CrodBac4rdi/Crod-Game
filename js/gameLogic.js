@@ -1,20 +1,20 @@
 // Game Logic Module
 
 // Helper Functions
-function formatMoney(amount) {
+window.formatMoney = function(amount) {
   if (amount >= 1000000) return `$${(amount / 1000000).toFixed(1)}M`;
   if (amount >= 1000) return `$${(amount / 1000).toFixed(1)}K`;
   return `$${amount.toFixed(0)}`;
 }
 
-function formatTime(date) {
+window.formatTime = function(date) {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 }
 
 // Project Generation
-function generateProject(gameState) {
+window.generateProject = function(gameState) {
   const types = Object.keys(PROJECT_TYPES);
   const type = types[Math.floor(Math.random() * types.length)];
   const projectType = PROJECT_TYPES[type];
@@ -47,7 +47,7 @@ function generateProject(gameState) {
   };
 }
 
-function generateProjectName(type) {
+window.generateProjectName = function(type) {
   const prefixes = PROJECT_NAMES_PREFIXES;
   const suffixes = PROJECT_NAMES_SUFFIXES;
   const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
@@ -66,11 +66,11 @@ function generateProjectName(type) {
   return Math.random() > 0.5 ? `${prefix} ${specific}` : `${specific} ${suffix}`;
 }
 
-function generateClientName() {
+window.generateClientName = function() {
   return CLIENT_NAMES[Math.floor(Math.random() * CLIENT_NAMES.length)];
 }
 
-function generateRequirements(type, difficulty) {
+window.generateRequirements = function(type, difficulty) {
   const reqs = {};
   const skillPool = Object.keys(SKILL_TYPES);
   const numSkills = Math.min(skillPool.length, 2 + Math.floor(difficulty / 2));
@@ -92,7 +92,7 @@ function generateRequirements(type, difficulty) {
   return reqs;
 }
 
-function generateFeatures(difficulty) {
+window.generateFeatures = function(difficulty) {
   const featureNames = [
     'User Authentication', 'Dashboard', 'Analytics', 'Reporting', 'API Integration',
     'Real-time Updates', 'Mobile Responsive', 'Data Export', 'Search Functionality',
@@ -114,7 +114,7 @@ function generateFeatures(difficulty) {
 }
 
 // Developer Generation
-function generateDeveloper(gameState) {
+window.generateDeveloper = function(gameState) {
   const skills = {};
   Object.keys(SKILL_TYPES).forEach(skill => {
     skills[skill] = 10 + Math.floor(Math.random() * 40);
@@ -147,7 +147,7 @@ function generateDeveloper(gameState) {
 }
 
 // Processing Functions
-function processProjects(projects, developers, gameState, deltaTime) {
+window.processProjects = function(projects, developers, gameState, deltaTime) {
   const updatedProjects = { ...projects };
   const notifications = [];
   
@@ -238,7 +238,7 @@ function processProjects(projects, developers, gameState, deltaTime) {
   return { projects: updatedProjects, notifications };
 }
 
-function processDevelopers(developers, projects, gameState, deltaTime) {
+window.processDevelopers = function(developers, projects, gameState, deltaTime) {
   const updatedDevelopers = { ...developers };
   const notifications = [];
   
@@ -295,7 +295,7 @@ function processDevelopers(developers, projects, gameState, deltaTime) {
   return { developers: updatedDevelopers, notifications };
 }
 
-function processMarket(market, gameState, deltaTime) {
+window.processMarket = function(market, gameState, deltaTime) {
   const updatedMarket = { ...market };
   
   // Market fluctuations
@@ -314,7 +314,7 @@ function processMarket(market, gameState, deltaTime) {
   return updatedMarket;
 }
 
-function processFinances(gameState, developers) {
+window.processFinances = function(gameState, developers) {
   let monthlyExpenses = 0;
   
   // Developer salaries
@@ -337,7 +337,7 @@ function processFinances(gameState, developers) {
 }
 
 // Additional Game Functions
-function calculateFinalReward(project, gameState) {
+window.calculateFinalReward = function(project, gameState) {
   let reward = project.reward;
   
   // Quality bonus/penalty
@@ -360,7 +360,7 @@ function calculateFinalReward(project, gameState) {
   return Math.floor(reward);
 }
 
-function generateRandomEvent(gameState) {
+window.generateRandomEvent = function(gameState) {
   if (Math.random() > 0.02) return null; // 2% chance per tick
   
   const event = MARKET_EVENTS[Math.floor(Math.random() * MARKET_EVENTS.length)];
@@ -371,7 +371,7 @@ function generateRandomEvent(gameState) {
   };
 }
 
-function checkAchievements(gameState, stats, achievements) {
+window.checkAchievements = function(gameState, stats, achievements) {
   const newAchievements = [];
   
   ACHIEVEMENTS.forEach(achievement => {

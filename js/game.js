@@ -1,5 +1,5 @@
 // Main Game Component
-const DevSimTycoon = () => {
+window.DevSimTycoon = () => {
   const { useState, useEffect, useRef, useCallback } = React;
   
   // Core Game State

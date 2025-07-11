@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - DevSim Tycoon</title>
+    
+    <!-- React and Babel for browser -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="debug"></div>
+    <div id="root"></div>
+    
+    <!-- Game modules -->
+    <script type="text/babel" src="./js/constants.js"></script>
+    <script type="text/babel" src="./js/gameLogic.js"></script>
+    <script type="text/babel" src="./js/components.js"></script>
+    <script type="text/babel" src="./js/game.js"></script>
+    
+    <!-- Debug Script -->
+    <script type="text/babel">
+        // Debug log
+        const debugEl = document.getElementById('debug');
+        debugEl.innerHTML = '<h2>Debug Info:</h2>';
+        
+        // Check if modules loaded
+        setTimeout(() => {
+            const checks = [
+                { name: 'PROJECT_TYPES', exists: typeof window.PROJECT_TYPES !== 'undefined' },
+                { name: 'formatMoney', exists: typeof window.formatMoney !== 'undefined' },
+                { name: 'generateProject', exists: typeof window.generateProject !== 'undefined' },
+                { name: 'Header', exists: typeof window.Header !== 'undefined' },
+                { name: 'DevSimTycoon', exists: typeof window.DevSimTycoon !== 'undefined' },
+            ];
+            
+            let html = '<h2>Module Check:</h2><ul>';
+            checks.forEach(check => {
+                html += `<li>${check.name}: ${check.exists ? '✅ Loaded' : '❌ Missing'}</li>`;
+            });
+            html += '</ul>';
+            
+            debugEl.innerHTML += html;
+            
+            // Try to render the game if all modules loaded
+            if (checks.every(c => c.exists)) {
+                try {
+                    const root = ReactDOM.createRoot(document.getElementById('root'));
+                    root.render(React.createElement(DevSimTycoon));
+                    debugEl.innerHTML += '<p style="color: green;">✅ Game rendered successfully!</p>';
+                } catch (error) {
+                    debugEl.innerHTML += `<p style="color: red;">❌ Error rendering game: ${error.message}</p>`;
+                    console.error(error);
+                }
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

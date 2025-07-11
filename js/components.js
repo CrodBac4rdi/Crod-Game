@@ -1,7 +1,7 @@
 // UI Components Module
 
 // Header Component
-function Header({ gameState, setGameState, formatMoney, formatTime }) {
+window.Header = function({ gameState, setGameState, formatMoney, formatTime }) {
   return React.createElement('div', {
     style: {
       background: 'linear-gradient(to right, #1e293b, #334155)',
@@ -102,7 +102,7 @@ function Header({ gameState, setGameState, formatMoney, formatTime }) {
 }
 
 // Tab Navigation Component
-function TabNav({ selectedTab, setSelectedTab }) {
+window.TabNav = function({ selectedTab, setSelectedTab }) {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'projects', label: 'Projects', icon: '📁' },
@@ -141,7 +141,7 @@ function TabNav({ selectedTab, setSelectedTab }) {
 }
 
 // Project Card Component
-function ProjectCard({ project, onAssign, developers, onStart }) {
+window.ProjectCard = function({ project, onAssign, developers, onStart }) {
   const progress = project.progress || 0;
   const quality = project.quality || 0;
   
@@ -298,7 +298,7 @@ function ProjectCard({ project, onAssign, developers, onStart }) {
 }
 
 // Developer Card Component
-function DeveloperCard({ developer, onAssign, onTrain, onFire }) {
+window.DeveloperCard = function({ developer, onAssign, onTrain, onFire }) {
   return React.createElement('div', {
     style: {
       background: '#1e293b',
@@ -440,7 +440,7 @@ function DeveloperCard({ developer, onAssign, onTrain, onFire }) {
 }
 
 // Notification Component
-function Notification({ notification, onClose }) {
+window.Notification = function({ notification, onClose }) {
   const colors = {
     success: '#10b981',
     error: '#ef4444',
