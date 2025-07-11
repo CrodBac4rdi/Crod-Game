@@ -156,7 +156,11 @@
         }
     </script>
     
-    <!-- Load Asset System first -->
+    <!-- Load core modules FIRST -->
+    <script src="src/core/GameConfig.js"></script>
+    <script src="src/core/EventSystem.js"></script>
+    
+    <!-- Load Asset System after EventSystem -->
     <script src="src/assets/sounds/AudioSystem.js"></script>
     <script src="src/assets/textures/TextureManager.js"></script>
     <script src="src/assets/models/ModelGenerator.js"></script>
@@ -164,9 +168,7 @@
     <script src="src/assets/PerformanceOptimizer.js"></script>
     <script src="src/assets/AssetIntegration.js"></script>
     
-    <!-- Load game modules -->
-    <script src="src/core/GameConfig.js"></script>
-    <script src="src/core/EventSystem.js"></script>
+    <!-- Load remaining game modules -->
     <script src="src/core/SaveManager.js"></script>
     <script src="src/game/GameState.js"></script>
     <script src="src/game/UpgradeManager.js"></script>
@@ -215,20 +217,31 @@
             document.head.appendChild(script);
         }
         
-        function initGame() {
+        async function initGame() {
             try {
                 console.log('Creating game...');
                 
-                // Initialize asset system first
+                // Initialize asset system first (after THREE.js is loaded)
                 console.log('Initializing asset system...');
                 window.AssetIntegration = new AssetIntegration();
                 
+                // Initialize assets with progress tracking
+                await window.AssetIntegration.initialize((progress, message) => {
+                    console.log(`Asset loading: ${progress}% - ${message}`);
+                    const progressBar = document.getElementById('loading-progress');
+                    const loadingText = document.getElementById('loading-text');
+                    if (progressBar) progressBar.style.width = progress + '%';
+                    if (loadingText) loadingText.textContent = message;
+                });
+                
+                console.log('Assets loaded, creating game...');
                 const game = new CosmicClicker();
                 console.log('Game created, initializing...');
                 game.init();
             } catch (error) {
                 console.error('Game initialization failed:', error);
                 document.getElementById('loading-text').textContent = 'Error: ' + error.message;
+                document.getElementById('loading-text').style.color = '#ff3366';
             }
         }
         
