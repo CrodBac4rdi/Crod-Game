@@ -165,8 +165,28 @@
     <!-- Initialize Game -->
     <script>
         window.addEventListener('DOMContentLoaded', () => {
-            const game = new CosmicClicker();
-            game.init();
+            console.log('DOM loaded');
+            try {
+                console.log('Creating game...');
+                const game = new CosmicClicker();
+                console.log('Game created, initializing...');
+                game.init();
+            } catch (error) {
+                console.error('Game initialization failed:', error);
+                document.getElementById('loading-text').textContent = 'Error: ' + error.message;
+            }
+        });
+    </script>
+    
+    <!-- Fallback error display -->
+    <script>
+        window.addEventListener('error', (e) => {
+            console.error('Script error:', e);
+            const loadingText = document.getElementById('loading-text');
+            if (loadingText) {
+                loadingText.textContent = 'Loading error: ' + e.message;
+                loadingText.style.color = '#ff3366';
+            }
         });
     </script>
 </body>
