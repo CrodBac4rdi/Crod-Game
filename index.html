@@ -217,31 +217,46 @@
             document.head.appendChild(script);
         }
         
-        async function initGame() {
+        function initGame() {
             try {
                 console.log('Creating game...');
                 
+                // TEMPORARILY DISABLE ASSET SYSTEM
                 // Initialize asset system first (after THREE.js is loaded)
-                console.log('Initializing asset system...');
-                window.AssetIntegration = new AssetIntegration();
+                // console.log('Initializing asset system...');
+                // window.AssetIntegration = new AssetIntegration();
                 
                 // Initialize assets with progress tracking
-                await window.AssetIntegration.initialize((progress, message) => {
-                    console.log(`Asset loading: ${progress}% - ${message}`);
-                    const progressBar = document.getElementById('loading-progress');
-                    const loadingText = document.getElementById('loading-text');
-                    if (progressBar) progressBar.style.width = progress + '%';
-                    if (loadingText) loadingText.textContent = message;
-                });
+                // await window.AssetIntegration.initialize((progress, message) => {
+                //     console.log(`Asset loading: ${progress}% - ${message}`);
+                //     const progressBar = document.getElementById('loading-progress');
+                //     const loadingText = document.getElementById('loading-text');
+                //     if (progressBar) progressBar.style.width = progress + '%';
+                //     if (loadingText) loadingText.textContent = message;
+                // });
                 
-                console.log('Assets loaded, creating game...');
+                console.log('Creating game...');
                 const game = new CosmicClicker();
                 console.log('Game created, initializing...');
                 game.init();
+                console.log('Game initialized successfully!');
             } catch (error) {
                 console.error('Game initialization failed:', error);
-                document.getElementById('loading-text').textContent = 'Error: ' + error.message;
-                document.getElementById('loading-text').style.color = '#ff3366';
+                console.error('Error stack:', error.stack);
+                
+                const loadingText = document.getElementById('loading-text');
+                if (loadingText) {
+                    loadingText.innerHTML = `
+                        <div style="color: #ff3366; font-size: 14px; line-height: 1.4;">
+                            <strong>Error:</strong> ${error.message}<br>
+                            <strong>File:</strong> ${error.fileName || 'Unknown'}<br>
+                            <strong>Line:</strong> ${error.lineNumber || 'Unknown'}<br><br>
+                            <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #00d4ff; color: #000; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                                🔄 Reload
+                            </button>
+                        </div>
+                    `;
+                }
             }
         }
         
