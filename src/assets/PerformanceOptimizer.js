@@ -75,7 +75,7 @@ window.PerformanceOptimizer = class PerformanceOptimizer {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
         // Check memory info (if available)
-        const memoryInfo = (performance as any).memory;
+        const memoryInfo = performance.memory;
         const totalMemory = memoryInfo ? memoryInfo.totalJSHeapSize : 0;
         
         // Determine optimization level based on hardware
@@ -167,7 +167,7 @@ window.PerformanceOptimizer = class PerformanceOptimizer {
         }
         
         // Get memory usage
-        const memoryInfo = (performance as any).memory;
+        const memoryInfo = performance.memory;
         if (memoryInfo) {
             this.metrics.memoryUsage = memoryInfo.usedJSHeapSize;
             this.metrics.gpuMemory = memoryInfo.totalJSHeapSize;

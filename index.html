@@ -156,6 +156,14 @@
         }
     </script>
     
+    <!-- Load Asset System first -->
+    <script src="src/assets/sounds/AudioSystem.js"></script>
+    <script src="src/assets/textures/TextureManager.js"></script>
+    <script src="src/assets/models/ModelGenerator.js"></script>
+    <script src="src/assets/AssetLoader.js"></script>
+    <script src="src/assets/PerformanceOptimizer.js"></script>
+    <script src="src/assets/AssetIntegration.js"></script>
+    
     <!-- Load game modules -->
     <script src="src/core/GameConfig.js"></script>
     <script src="src/core/EventSystem.js"></script>
@@ -210,6 +218,11 @@
         function initGame() {
             try {
                 console.log('Creating game...');
+                
+                // Initialize asset system first
+                console.log('Initializing asset system...');
+                window.AssetIntegration = new AssetIntegration();
+                
                 const game = new CosmicClicker();
                 console.log('Game created, initializing...');
                 game.init();
