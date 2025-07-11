@@ -1,0 +1,384 @@
+<\!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Cosmic Clicker 3D - Shell</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #000; color: #fff; overflow: hidden; }
+        
+        #shell-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; }
+        
+        #loading-shell {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #0a0a0f, #1a1a2e);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        
+        .loading-title {
+            font-size: 3rem; margin-bottom: 2rem;
+            background: linear-gradient(45deg, #00d4ff, #ff00ff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        
+        .loading-progress { width: 400px; height: 20px; background: #333; border-radius: 10px; overflow: hidden; margin-bottom: 1rem; }
+        .loading-bar { height: 100%; background: linear-gradient(90deg, #00d4ff, #00ff88); width: 0%; transition: width 0.3s ease; }
+        .loading-text { font-size: 1.2rem; margin-bottom: 1rem; text-align: center; }
+        
+        .module-status { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 2rem; }
+        .module { padding: 0.5rem 1rem; border-radius: 5px; text-align: center; font-size: 0.9rem; }
+        .module.loading { background: #4d4d00; }
+        .module.success { background: #004d40; }
+        .module.error { background: #4d0000; }
+        .module.disabled { background: #333; }
+        
+        #game-shell { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
+        #canvas-shell { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        #ui-shell { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .ui-element { pointer-events: auto; }
+    </style>
+</head>
+<body>
+    <div id="shell-container">
+        <div id="loading-shell">
+            <h1 class="loading-title">COSMIC CLICKER 3D</h1>
+            <div class="loading-progress">
+                <div class="loading-bar" id="progress-bar"></div>
+            </div>
+            <div class="loading-text" id="loading-text">Initializing Shell...</div>
+            
+            <div class="module-status">
+                <div class="module loading" id="module-core">Core</div>
+                <div class="module loading" id="module-graphics">Graphics</div>
+                <div class="module loading" id="module-audio">Audio</div>
+                <div class="module loading" id="module-ui">UI</div>
+                <div class="module loading" id="module-game">Game</div>
+                <div class="module loading" id="module-assets">Assets</div>
+            </div>
+        </div>
+        
+        <div id="game-shell">
+            <canvas id="canvas-shell"></canvas>
+            <div id="ui-shell"></div>
+        </div>
+    </div>
+    
+    <script>
+        class GameShell {
+            constructor() {
+                this.modules = new Map();
+                this.progressBar = document.getElementById('progress-bar');
+                this.loadingText = document.getElementById('loading-text');
+                console.log('🐚 GameShell initialized');
+            }
+            
+            registerModule(name, config) {
+                this.modules.set(name, {
+                    name, status: 'pending', instance: null,
+                    required: config.required || false,
+                    dependencies: config.dependencies || [],
+                    loader: config.loader, error: null
+                });
+                console.log(`📦 Module ${name} registered`);
+            }
+            
+            updateProgress(percent, message) {
+                if (this.progressBar) this.progressBar.style.width = percent + '%';
+                if (this.loadingText) this.loadingText.textContent = message;
+                console.log(`⚡ ${percent}% - ${message}`);
+            }
+            
+            updateModuleStatus(name, status, error = null) {
+                const module = this.modules.get(name);
+                if (module) {
+                    module.status = status;
+                    module.error = error;
+                    const element = document.getElementById(`module-${name}`);
+                    if (element) {
+                        element.className = `module ${status}`;
+                        element.textContent = name + (error ? ' ❌' : status === 'success' ? ' ✅' : '');
+                    }
+                }
+            }
+            
+            async loadModule(name) {
+                const module = this.modules.get(name);
+                if (\!module) return false;
+                
+                try {
+                    this.updateModuleStatus(name, 'loading');
+                    console.log(`🔄 Loading module: ${name}`);
+                    
+                    for (const dep of module.dependencies) {
+                        const depModule = this.modules.get(dep);
+                        if (\!depModule || depModule.status \!== 'success') {
+                            throw new Error(`Dependency ${dep} not available`);
+                        }
+                    }
+                    
+                    const instance = await module.loader();
+                    module.instance = instance;
+                    this.updateModuleStatus(name, 'success');
+                    console.log(`✅ Module ${name} loaded`);
+                    return true;
+                } catch (error) {
+                    console.error(`❌ Module ${name} failed:`, error);
+                    this.updateModuleStatus(name, 'error', error);
+                    if (module.required) throw error;
+                    this.updateModuleStatus(name, 'disabled');
+                    return true;
+                }
+            }
+            
+            async loadAllModules() {
+                try {
+                    const loadOrder = ['core', 'graphics', 'audio', 'ui', 'assets', 'game'];
+                    let progress = 10;
+                    const step = 80 / loadOrder.length;
+                    
+                    for (const name of loadOrder) {
+                        if (this.modules.has(name)) {
+                            await this.loadModule(name);
+                            progress += step;
+                            this.updateProgress(progress, `Loaded ${name}...`);
+                            await new Promise(r => setTimeout(r, 100));
+                        }
+                    }
+                    
+                    this.updateProgress(100, 'Ready\!');
+                    setTimeout(() => {
+                        document.getElementById('loading-shell').style.display = 'none';
+                        document.getElementById('game-shell').style.display = 'block';
+                        this.startGame();
+                    }, 500);
+                } catch (error) {
+                    console.error('❌ Critical error:', error);
+                    this.showError(error.message);
+                }
+            }
+            
+            startGame() {
+                console.log('🚀 Starting game...');
+                this.modules.forEach((module, name) => {
+                    if (module.status === 'success' && module.instance && module.instance.start) {
+                        try { 
+                            module.instance.start(); 
+                            console.log(`✅ Module ${name} started`);
+                        } catch (e) { 
+                            console.error(`❌ Start failed for ${name}:`, e); 
+                        }
+                    }
+                });
+            }
+            
+            showError(message) {
+                document.getElementById('loading-shell').innerHTML = `
+                    <div style="background: #4d0000; padding: 2rem; border-radius: 10px; text-align: center;">
+                        <h2>🚨 Error</h2><p>${message}</p>
+                        <button onclick="location.reload()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #00d4ff; color: #000; border: none; border-radius: 4px; cursor: pointer;">Reload</button>
+                    </div>
+                `;
+            }
+            
+            getModule(name) {
+                const module = this.modules.get(name);
+                return module && module.status === 'success' ? module.instance : null;
+            }
+        }
+        
+        window.shell = new GameShell();
+        
+        window.addEventListener('error', (e) => {
+            console.error('🚨 Global error:', e);
+        });
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js"></script>
+    
+    <script>
+        function waitForThree() {
+            if (typeof THREE === 'undefined') {
+                setTimeout(waitForThree, 100);
+                return;
+            }
+            console.log('✅ Three.js loaded');
+            registerModules();
+        }
+        
+        function registerModules() {
+            // Core Module
+            shell.registerModule('core', {
+                required: true,
+                loader: async () => ({
+                    config: { INITIAL_ENERGY: 0, BASE_CLICK_VALUE: 1 },
+                    events: new Map(),
+                    emit: function(event, data) {
+                        const handlers = this.events.get(event) || [];
+                        handlers.forEach(h => { try { h(data); } catch (e) { console.error(e); } });
+                    },
+                    on: function(event, handler) {
+                        if (\!this.events.has(event)) this.events.set(event, []);
+                        this.events.get(event).push(handler);
+                    }
+                })
+            });
+            
+            // Graphics Module
+            shell.registerModule('graphics', {
+                required: true,
+                dependencies: ['core'],
+                loader: async () => {
+                    const canvas = document.getElementById('canvas-shell');
+                    const scene = new THREE.Scene();
+                    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+                    
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.position.z = 30;
+                    
+                    const geometry = new THREE.SphereGeometry(5, 32, 32);
+                    const material = new THREE.MeshBasicMaterial({ color: 0x00d4ff });
+                    const orb = new THREE.Mesh(geometry, material);
+                    scene.add(orb);
+                    
+                    const light = new THREE.AmbientLight(0x404040, 0.5);
+                    scene.add(light);
+                    
+                    return {
+                        scene, camera, renderer, orb,
+                        start: function() { this.animate(); },
+                        animate: function() {
+                            requestAnimationFrame(() => this.animate());
+                            this.orb.rotation.y += 0.01;
+                            this.renderer.render(this.scene, this.camera);
+                        }
+                    };
+                }
+            });
+            
+            // Audio Module (optional)
+            shell.registerModule('audio', {
+                required: false,
+                loader: async () => {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    return {
+                        context: ctx,
+                        playClick: function() {
+                            try {
+                                const osc = this.context.createOscillator();
+                                const gain = this.context.createGain();
+                                osc.connect(gain);
+                                gain.connect(this.context.destination);
+                                osc.frequency.value = 800;
+                                gain.gain.value = 0.1;
+                                osc.start();
+                                osc.stop(this.context.currentTime + 0.1);
+                            } catch (e) { console.warn('Audio failed:', e); }
+                        }
+                    };
+                }
+            });
+            
+            // UI Module
+            shell.registerModule('ui', {
+                required: true,
+                dependencies: ['core'],
+                loader: async () => {
+                    const container = document.getElementById('ui-shell');
+                    
+                    const energyDisplay = document.createElement('div');
+                    energyDisplay.className = 'ui-element';
+                    energyDisplay.style.cssText = 'position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 10px; color: #00d4ff; font-size: 1.5rem; font-weight: bold;';
+                    energyDisplay.textContent = 'Energy: 0';
+                    container.appendChild(energyDisplay);
+                    
+                    const clickInfo = document.createElement('div');
+                    clickInfo.className = 'ui-element';
+                    clickInfo.style.cssText = 'position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 10px; color: #fff; text-align: center;';
+                    clickInfo.textContent = 'Click the orb to generate energy\!';
+                    container.appendChild(clickInfo);
+                    
+                    return {
+                        energyDisplay, clickInfo,
+                        updateEnergy: function(energy) {
+                            this.energyDisplay.textContent = `Energy: ${energy}`;
+                        }
+                    };
+                }
+            });
+            
+            // Assets Module (optional)
+            shell.registerModule('assets', {
+                required: false,
+                loader: async () => ({ loaded: true, textures: new Map(), models: new Map() })
+            });
+            
+            // Game Module
+            shell.registerModule('game', {
+                required: true,
+                dependencies: ['core', 'graphics', 'ui'],
+                loader: async () => {
+                    const core = shell.getModule('core');
+                    const graphics = shell.getModule('graphics');
+                    const ui = shell.getModule('ui');
+                    const audio = shell.getModule('audio');
+                    
+                    let energy = 0;
+                    const raycaster = new THREE.Raycaster();
+                    const mouse = new THREE.Vector2();
+                    
+                    function onCanvasClick(event) {
+                        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                        
+                        raycaster.setFromCamera(mouse, graphics.camera);
+                        const intersects = raycaster.intersectObject(graphics.orb);
+                        
+                        if (intersects.length > 0) {
+                            energy++;
+                            ui.updateEnergy(energy);
+                            
+                            if (audio) audio.playClick();
+                            
+                            graphics.orb.scale.set(1.2, 1.2, 1.2);
+                            setTimeout(() => graphics.orb.scale.set(1, 1, 1), 100);
+                            
+                            console.log(`⚡ Energy: ${energy}`);
+                        }
+                    }
+                    
+                    graphics.renderer.domElement.addEventListener('click', onCanvasClick);
+                    
+                    window.addEventListener('resize', () => {
+                        graphics.camera.aspect = window.innerWidth / window.innerHeight;
+                        graphics.camera.updateProjectionMatrix();
+                        graphics.renderer.setSize(window.innerWidth, window.innerHeight);
+                    });
+                    
+                    return {
+                        energy,
+                        start: function() {
+                            console.log('🎮 Game started');
+                            ui.updateEnergy(this.energy);
+                        },
+                        addEnergy: function(amount) {
+                            energy += amount;
+                            ui.updateEnergy(energy);
+                        }
+                    };
+                }
+            });
+            
+            shell.loadAllModules();
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', waitForThree);
+        } else {
+            waitForThree();
+        }
+    </script>
+</body>
+</html>
+SHELL_EOF < /dev/null
