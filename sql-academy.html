@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Academy - Learn by Doing</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg: #0f0f23;
+            --surface: #1a1a2e;
+            --surface-light: #25274d;
+            --primary: #4ecca3;
+            --secondary: #6c63ff;
+            --accent: #ff6b6b;
+            --text: #eeeeee;
+            --text-dim: #a0a0a0;
+            --success: #4ecca3;
+            --error: #ff6b6b;
+            --warning: #ffd93d;
+        }
+        
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        /* Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 350px 1fr 400px;
+            height: 100vh;
+            gap: 1px;
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .panel {
+            background: var(--surface);
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        /* Header */
+        .game-header {
+            background: var(--surface-light);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--primary);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .level-info {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+        
+        .level-badge {
+            background: var(--primary);
+            color: var(--bg);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .xp-bar {
+            width: 200px;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .xp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.5s ease;
+            position: relative;
+        }
+        
+        .xp-text {
+            position: absolute;
+            top: -20px;
+            right: 0;
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        
+        /* Tutorial Panel */
+        .tutorial-section {
+            padding: 1.5rem;
+        }
+        
+        .lesson-card {
+            background: var(--surface-light);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .lesson-card:hover {
+            transform: translateX(5px);
+            border-color: var(--primary);
+        }
+        
+        .lesson-card.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(78, 204, 163, 0.3);
+        }
+        
+        .lesson-card.completed {
+            opacity: 0.8;
+            border-color: var(--success);
+        }
+        
+        .lesson-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .lesson-title {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .lesson-status {
+            font-size: 20px;
+        }
+        
+        .lesson-desc {
+            font-size: 14px;
+            color: var(--text-dim);
+            margin-bottom: 0.5rem;
+        }
+        
+        .lesson-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .tag {
+            font-size: 12px;
+            padding: 2px 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: var(--text-dim);
+        }
+        
+        /* Code Editor */
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .task-header {
+            background: var(--surface-light);
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .task-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        .task-description {
+            background: rgba(255,255,255,0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            line-height: 1.8;
+        }
+        
+        .hint-box {
+            background: rgba(108, 99, 255, 0.1);
+            border-left: 3px solid var(--secondary);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .code-editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #1e1e1e;
+            padding: 1rem;
+        }
+        
+        .editor-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .file-tab {
+            background: rgba(255,255,255,0.05);
+            padding: 0.5rem 1rem;
+            border-radius: 8px 8px 0 0;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .sql-icon {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .editor-textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            line-height: 1.8;
+            resize: none;
+            outline: none;
+            padding: 1rem;
+        }
+        
+        .editor-textarea::placeholder {
+            color: var(--text-dim);
+            opacity: 0.5;
+        }
+        
+        .run-button {
+            background: var(--primary);
+            color: var(--bg);
+            border: none;
+            padding: 1rem 2rem;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            align-self: flex-end;
+            margin: 1rem;
+            border-radius: 8px;
+        }
+        
+        .run-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(78, 204, 163, 0.4);
+        }
+        
+        .run-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Output Panel */
+        .output-section {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .output-header {
+            background: var(--surface-light);
+            padding: 1rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .output-content {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 14px;
+        }
+        
+        .result-table th {
+            background: var(--surface-light);
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--primary);
+        }
+        
+        .result-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .result-table tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .error-message {
+            background: rgba(255, 107, 107, 0.1);
+            border-left: 3px solid var(--error);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+        }
+        
+        .success-message {
+            background: rgba(78, 204, 163, 0.1);
+            border-left: 3px solid var(--success);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .success-icon {
+            font-size: 24px;
+        }
+        
+        /* Schema View */
+        .schema-view {
+            background: var(--surface-light);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .schema-header {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--secondary);
+        }
+        
+        .table-schema {
+            background: rgba(255,255,255,0.05);
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+        }
+        
+        .table-name {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .column-list {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-left: 1rem;
+        }
+        
+        /* Achievements */
+        .achievement-popup {
+            position: fixed;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface-light);
+            border: 2px solid var(--primary);
+            padding: 1.5rem 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            z-index: 1000;
+            animation: slideDown 0.5s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translate(-50%, -100px);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, 0);
+                opacity: 1;
+            }
+        }
+        
+        .achievement-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .achievement-icon {
+            font-size: 48px;
+        }
+        
+        .achievement-text h3 {
+            color: var(--primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .achievement-text p {
+            font-size: 14px;
+            color: var(--text-dim);
+        }
+        
+        /* Syntax Highlighting */
+        .keyword { color: #ff79c6; }
+        .string { color: #f1fa8c; }
+        .number { color: #bd93f9; }
+        .operator { color: #ff79c6; }
+        .function { color: #8be9fd; }
+        .comment { color: #6272a4; }
+        
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <script>
+        const { useState, useEffect, useRef } = React;
+        const { createRoot } = ReactDOM;
+        
+        // SQL Lessons Data
+        const SQL_LESSONS = [
+            {
+                id: 1,
+                title: "Your First Query",
+                description: "Learn the basics of SELECT statements",
+                difficulty: "Beginner",
+                xp: 50,
+                tags: ["SELECT", "FROM"],
+                completed: false,
+                tasks: [
+                    {
+                        id: 1,
+                        title: "Hello SQL World",
+                        description: "Let's start simple! Write a query to select all columns from the 'users' table.\n\nIn SQL, we use SELECT * to get all columns, and FROM to specify which table.",
+                        hint: "The basic syntax is: SELECT * FROM table_name;",
+                        solution: "SELECT * FROM users;",
+                        expectedColumns: ["id", "name", "email", "age"],
+                        checkQuery: (query) => {
+                            const normalized = query.toLowerCase().trim();
+                            return normalized.includes('select') && 
+                                   normalized.includes('*') && 
+                                   normalized.includes('from') && 
+                                   normalized.includes('users');
+                        }
+                    },
+                    {
+                        id: 2,
+                        title: "Specific Columns",
+                        description: "Great! Now let's select only specific columns. Get just the 'name' and 'email' from users.",
+                        hint: "List column names separated by commas after SELECT",
+                        solution: "SELECT name, email FROM users;",
+                        expectedColumns: ["name", "email"],
+                        checkQuery: (query) => {
+                            const normalized = query.toLowerCase().trim();
+                            return normalized.includes('select') && 
+                                   normalized.includes('name') && 
+                                   normalized.includes('email') && 
+                                   normalized.includes('from users');
+                        }
+                    }
+                ]
+            },
+            {
+                id: 2,
+                title: "Filtering Data",
+                description: "Master the WHERE clause",
+                difficulty: "Beginner",
+                xp: 75,
+                tags: ["WHERE", "AND", "OR"],
+                completed: false,
+                tasks: [
+                    {
+                        id: 1,
+                        title: "Basic WHERE",
+                        description: "Let's filter our results! Select all users who are 25 years old or older.\n\nThe WHERE clause lets us filter rows based on conditions.",
+                        hint: "Use WHERE column >= value",
+                        solution: "SELECT * FROM users WHERE age >= 25;",
+                        expectedColumns: ["id", "name", "email", "age"],
+                        checkQuery: (query) => {
+                            const normalized = query.toLowerCase().trim();
+                            return normalized.includes('where') && 
+                                   normalized.includes('age') && 
+                                   (normalized.includes('>=') || normalized.includes('>'));
+                        }
+                    },
+                    {
+                        id: 2,
+                        title: "Multiple Conditions",
+                        description: "Now combine conditions! Find users who are between 20 and 30 years old.\n\nYou can use AND to combine multiple conditions.",
+                        hint: "Use WHERE age >= 20 AND age <= 30",
+                        solution: "SELECT * FROM users WHERE age >= 20 AND age <= 30;",
+                        expectedColumns: ["id", "name", "email", "age"],
+                        checkQuery: (query) => {
+                            const normalized = query.toLowerCase().trim();
+                            return normalized.includes('where') && 
+                                   normalized.includes('and') && 
+                                   normalized.includes('age');
+                        }
+                    }
+                ]
+            },
+            {
+                id: 3,
+                title: "Sorting Results",
+                description: "Learn ORDER BY and LIMIT",
+                difficulty: "Beginner",
+                xp: 75,
+                tags: ["ORDER BY", "LIMIT", "ASC", "DESC"],
+                completed: false,
+                tasks: [
+                    {
+                        id: 1,
+                        title: "Sort by Age",
+                        description: "Sort all users by age in descending order (oldest first).\n\nORDER BY sorts your results, and DESC means descending.",
+                        hint: "Use ORDER BY column DESC",
+                        solution: "SELECT * FROM users ORDER BY age DESC;",
+                        expectedColumns: ["id", "name", "email", "age"],
+                        checkQuery: (query) => {
+                            const normalized = query.toLowerCase().trim();
+                            return normalized.includes('order by') && 
+                                   normalized.includes('age') && 
+                                   normalized.includes('desc');
+                        }
+                    }
+                ]
+            },
+            {
+                id: 4,
+                title: "Joining Tables",
+                description: "Connect data from multiple tables",
+                difficulty: "Intermediate",
+                xp: 150,
+                tags: ["JOIN", "INNER JOIN", "LEFT JOIN"],
+                completed: false,
+                tasks: [
+                    {
+                        id: 1,
+                        title: "Your First JOIN",
+                        description: "Let's connect users with their orders! Select user names and their order totals.\n\nJOIN connects two tables based on a common column.",
+                        hint: "Use JOIN orders ON users.id = orders.user_id",
+                        solution: "SELECT users.name, orders.total FROM users JOIN orders ON users.id = orders.user_id;",
+                        expectedColumns: ["name", "total"],
+                        checkQuery: (query) => {
+                            const normalized = query.toLowerCase().trim();
+                            return normalized.includes('join') && 
+                                   normalized.includes('users') && 
+                                   normalized.includes('orders');
+                        }
+                    }
+                ]
+            },
+            {
+                id: 5,
+                title: "Aggregate Functions",
+                description: "COUNT, SUM, AVG, and GROUP BY",
+                difficulty: "Intermediate",
+                xp: 200,
+                tags: ["COUNT", "SUM", "GROUP BY", "HAVING"],
+                completed: false,
+                tasks: [
+                    {
+                        id: 1,
+                        title: "Count Users",
+                        description: "Count how many users we have in total.\n\nCOUNT(*) counts all rows.",
+                        hint: "Use SELECT COUNT(*) FROM table",
+                        solution: "SELECT COUNT(*) FROM users;",
+                        expectedColumns: ["COUNT(*)"],
+                        checkQuery: (query) => {
+                            const normalized = query.toLowerCase().trim();
+                            return normalized.includes('count(*)') || 
+                                   normalized.includes('count( * )');
+                        }
+                    }
+                ]
+            }
+        ];
+        
+        // Mock Database
+        const MOCK_DB = {
+            users: [
+                { id: 1, name: "Alice Johnson", email: "alice@email.com", age: 28 },
+                { id: 2, name: "Bob Smith", email: "bob@email.com", age: 32 },
+                { id: 3, name: "Charlie Brown", email: "charlie@email.com", age: 23 },
+                { id: 4, name: "Diana Prince", email: "diana@email.com", age: 35 },
+                { id: 5, name: "Eve Wilson", email: "eve@email.com", age: 21 }
+            ],
+            orders: [
+                { id: 1, user_id: 1, total: 99.99, date: "2024-01-15" },
+                { id: 2, user_id: 2, total: 149.50, date: "2024-01-16" },
+                { id: 3, user_id: 1, total: 75.00, date: "2024-01-17" },
+                { id: 4, user_id: 3, total: 200.00, date: "2024-01-18" },
+                { id: 5, user_id: 2, total: 50.25, date: "2024-01-19" }
+            ],
+            products: [
+                { id: 1, name: "Laptop", price: 999.99, category: "Electronics" },
+                { id: 2, name: "Mouse", price: 29.99, category: "Electronics" },
+                { id: 3, name: "Desk", price: 299.99, category: "Furniture" },
+                { id: 4, name: "Chair", price: 199.99, category: "Furniture" }
+            ]
+        };
+        
+        // SQL Academy Component
+        function SQLAcademy() {
+            const [currentLesson, setCurrentLesson] = useState(null);
+            const [currentTask, setCurrentTask] = useState(null);
+            const [code, setCode] = useState('');
+            const [output, setOutput] = useState(null);
+            const [error, setError] = useState(null);
+            const [isRunning, setIsRunning] = useState(false);
+            const [completedTasks, setCompletedTasks] = useState([]);
+            const [userXP, setUserXP] = useState(0);
+            const [userLevel, setUserLevel] = useState(1);
+            const [achievements, setAchievements] = useState([]);
+            const [showAchievement, setShowAchievement] = useState(null);
+            
+            const editorRef = useRef(null);
+            
+            // Initialize
+            useEffect(() => {
+                // Load progress
+                const saved = localStorage.getItem('sqlAcademyProgress');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    setCompletedTasks(data.completedTasks || []);
+                    setUserXP(data.userXP || 0);
+                    setUserLevel(data.userLevel || 1);
+                }
+                
+                // Start with first lesson
+                if (!currentLesson) {
+                    selectLesson(SQL_LESSONS[0]);
+                }
+            }, []);
+            
+            // Save progress
+            useEffect(() => {
+                localStorage.setItem('sqlAcademyProgress', JSON.stringify({
+                    completedTasks,
+                    userXP,
+                    userLevel,
+                    timestamp: Date.now()
+                }));
+            }, [completedTasks, userXP, userLevel]);
+            
+            // Select lesson
+            function selectLesson(lesson) {
+                setCurrentLesson(lesson);
+                setCurrentTask(lesson.tasks[0]);
+                setCode('');
+                setOutput(null);
+                setError(null);
+            }
+            
+            // Run SQL Query
+            async function runQuery() {
+                if (!code.trim()) return;
+                
+                setIsRunning(true);
+                setError(null);
+                setOutput(null);
+                
+                // Simulate processing
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                try {
+                    // Basic SQL parsing and execution
+                    const query = code.trim().toLowerCase();
+                    
+                    // Check if query is correct for the task
+                    if (currentTask && currentTask.checkQuery) {
+                        if (!currentTask.checkQuery(code)) {
+                            setError("That's not quite right. Check the hint and try again!");
+                            setIsRunning(false);
+                            return;
+                        }
+                    }
+                    
+                    // Execute query (simplified)
+                    let result = [];
+                    if (query.includes('select * from users')) {
+                        result = MOCK_DB.users;
+                    } else if (query.includes('select name, email from users')) {
+                        result = MOCK_DB.users.map(u => ({ name: u.name, email: u.email }));
+                    } else if (query.includes('where age')) {
+                        result = MOCK_DB.users.filter(u => {
+                            if (query.includes('>=')) {
+                                const age = parseInt(query.match(/age\s*>=\s*(\d+)/)?.[1] || 0);
+                                return u.age >= age;
+                            }
+                            if (query.includes('and')) {
+                                return u.age >= 20 && u.age <= 30;
+                            }
+                            return true;
+                        });
+                    } else if (query.includes('order by age desc')) {
+                        result = [...MOCK_DB.users].sort((a, b) => b.age - a.age);
+                    } else if (query.includes('join')) {
+                        result = MOCK_DB.users
+                            .filter(u => MOCK_DB.orders.some(o => o.user_id === u.id))
+                            .map(u => {
+                                const orders = MOCK_DB.orders.filter(o => o.user_id === u.id);
+                                return orders.map(o => ({ name: u.name, total: o.total }));
+                            })
+                            .flat();
+                    } else if (query.includes('count(*)')) {
+                        result = [{ 'COUNT(*)': MOCK_DB.users.length }];
+                    }
+                    
+                    setOutput(result);
+                    
+                    // Task completed!
+                    if (currentTask && result.length > 0) {
+                        completeTask();
+                    }
+                    
+                } catch (err) {
+                    setError(`SQL Error: ${err.message}`);
+                }
+                
+                setIsRunning(false);
+            }
+            
+            // Complete task
+            function completeTask() {
+                const taskId = `${currentLesson.id}-${currentTask.id}`;
+                if (!completedTasks.includes(taskId)) {
+                    setCompletedTasks([...completedTasks, taskId]);
+                    setUserXP(userXP + 25);
+                    
+                    // Check level up
+                    const newLevel = Math.floor(userXP / 100) + 1;
+                    if (newLevel > userLevel) {
+                        setUserLevel(newLevel);
+                        showAchievementPopup('Level Up!', `You reached level ${newLevel}!`, '🎉');
+                    }
+                    
+                    // Next task
+                    const currentIndex = currentLesson.tasks.findIndex(t => t.id === currentTask.id);
+                    if (currentIndex < currentLesson.tasks.length - 1) {
+                        setTimeout(() => {
+                            setCurrentTask(currentLesson.tasks[currentIndex + 1]);
+                            setCode('');
+                            setOutput(null);
+                        }, 1500);
+                    } else {
+                        // Lesson complete!
+                        showAchievementPopup('Lesson Complete!', currentLesson.title, '🏆');
+                    }
+                }
+            }
+            
+            // Show achievement
+            function showAchievementPopup(title, desc, icon) {
+                setShowAchievement({ title, desc, icon });
+                setTimeout(() => setShowAchievement(null), 3000);
+            }
+            
+            // Handle typing
+            function handleCodeChange(e) {
+                const value = e.target.value;
+                setCode(value);
+                
+                // Auto-complete helpers
+                if (value.endsWith('sel')) {
+                    setCode(value + 'ect ');
+                } else if (value.endsWith('fr')) {
+                    setCode(value + 'om ');
+                } else if (value.endsWith('wh')) {
+                    setCode(value + 'ere ');
+                }
+            }
+            
+            // Render
+            return React.createElement('div', { className: 'app-container' },
+                // Left Panel - Lessons
+                React.createElement('div', { className: 'panel' },
+                    React.createElement('div', { className: 'game-header' },
+                        React.createElement('h2', null, 'SQL Academy'),
+                        React.createElement('div', { className: 'level-info' },
+                            React.createElement('span', { className: 'level-badge' }, 
+                                `Level ${userLevel}`
+                            ),
+                            React.createElement('div', { style: { position: 'relative' } },
+                                React.createElement('div', { className: 'xp-bar' },
+                                    React.createElement('div', {
+                                        className: 'xp-fill',
+                                        style: { width: `${(userXP % 100)}%` }
+                                    })
+                                ),
+                                React.createElement('span', { className: 'xp-text' }, 
+                                    `${userXP % 100}/100 XP`
+                                )
+                            )
+                        )
+                    ),
+                    
+                    React.createElement('div', { className: 'tutorial-section' },
+                        React.createElement('h3', { style: { marginBottom: '1rem' } }, 
+                            'Lessons'
+                        ),
+                        SQL_LESSONS.map(lesson => {
+                            const lessonComplete = lesson.tasks.every(task => 
+                                completedTasks.includes(`${lesson.id}-${task.id}`)
+                            );
+                            
+                            return React.createElement('div', {
+                                key: lesson.id,
+                                className: `lesson-card ${currentLesson?.id === lesson.id ? 'active' : ''} ${lessonComplete ? 'completed' : ''}`,
+                                onClick: () => selectLesson(lesson)
+                            },
+                                React.createElement('div', { className: 'lesson-header' },
+                                    React.createElement('span', { className: 'lesson-title' }, 
+                                        lesson.title
+                                    ),
+                                    React.createElement('span', { className: 'lesson-status' }, 
+                                        lessonComplete ? '✅' : '📘'
+                                    )
+                                ),
+                                React.createElement('p', { className: 'lesson-desc' }, 
+                                    lesson.description
+                                ),
+                                React.createElement('div', { className: 'lesson-tags' },
+                                    lesson.tags.map(tag => 
+                                        React.createElement('span', { 
+                                            key: tag, 
+                                            className: 'tag' 
+                                        }, tag)
+                                    )
+                                )
+                            );
+                        })
+                    )
+                ),
+                
+                // Center - Code Editor
+                React.createElement('div', { className: 'panel editor-container' },
+                    currentTask && React.createElement('div', { className: 'task-header' },
+                        React.createElement('h3', { className: 'task-title' }, 
+                            currentTask.title
+                        ),
+                        React.createElement('div', { className: 'task-description' }, 
+                            currentTask.description
+                        ),
+                        currentTask.hint && React.createElement('div', { className: 'hint-box' },
+                            React.createElement('strong', null, '💡 Hint: '),
+                            currentTask.hint
+                        )
+                    ),
+                    
+                    React.createElement('div', { className: 'code-editor' },
+                        React.createElement('div', { className: 'editor-header' },
+                            React.createElement('div', { className: 'file-tab' },
+                                React.createElement('span', { className: 'sql-icon' }, 'SQL'),
+                                React.createElement('span', null, 'query.sql')
+                            )
+                        ),
+                        React.createElement('textarea', {
+                            ref: editorRef,
+                            className: 'editor-textarea',
+                            value: code,
+                            onChange: handleCodeChange,
+                            placeholder: '-- Type your SQL query here...\n-- Press Run or Ctrl+Enter to execute',
+                            onKeyDown: (e) => {
+                                if (e.ctrlKey && e.key === 'Enter') {
+                                    runQuery();
+                                }
+                            }
+                        })
+                    ),
+                    
+                    React.createElement('button', {
+                        className: 'run-button',
+                        onClick: runQuery,
+                        disabled: isRunning || !code.trim()
+                    },
+                        isRunning ? React.createElement('span', { className: 'loading-spinner' }) : '▶',
+                        ' Run Query'
+                    )
+                ),
+                
+                // Right Panel - Output
+                React.createElement('div', { className: 'panel output-section' },
+                    React.createElement('div', { className: 'output-header' },
+                        React.createElement('span', null, 'Output'),
+                        output && React.createElement('span', { style: { fontSize: '14px', color: 'var(--text-dim)' } }, 
+                            `${output.length} rows`
+                        )
+                    ),
+                    
+                    React.createElement('div', { className: 'output-content' },
+                        // Database Schema
+                        React.createElement('div', { className: 'schema-view' },
+                            React.createElement('div', { className: 'schema-header' }, 
+                                '📊 Database Schema'
+                            ),
+                            Object.entries(MOCK_DB).map(([tableName, data]) =>
+                                React.createElement('div', { 
+                                    key: tableName,
+                                    className: 'table-schema'
+                                },
+                                    React.createElement('div', { className: 'table-name' }, 
+                                        `🗂️ ${tableName}`
+                                    ),
+                                    React.createElement('div', { className: 'column-list' },
+                                        Object.keys(data[0] || {}).join(', ')
+                                    )
+                                )
+                            )
+                        ),
+                        
+                        // Results
+                        error && React.createElement('div', { className: 'error-message' }, 
+                            error
+                        ),
+                        
+                        output && output.length > 0 && React.createElement('div', null,
+                            React.createElement('div', { className: 'success-message' },
+                                React.createElement('span', { className: 'success-icon' }, '✨'),
+                                React.createElement('span', null, 'Great job! Query executed successfully.')
+                            ),
+                            
+                            React.createElement('table', { className: 'result-table' },
+                                React.createElement('thead', null,
+                                    React.createElement('tr', null,
+                                        Object.keys(output[0]).map(col =>
+                                            React.createElement('th', { key: col }, col)
+                                        )
+                                    )
+                                ),
+                                React.createElement('tbody', null,
+                                    output.map((row, i) =>
+                                        React.createElement('tr', { key: i },
+                                            Object.values(row).map((val, j) =>
+                                                React.createElement('td', { key: j }, 
+                                                    val !== null && val !== undefined ? val.toString() : 'NULL'
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+                        
+                        !output && !error && currentTask && React.createElement('div', {
+                            style: { 
+                                textAlign: 'center', 
+                                marginTop: '4rem',
+                                color: 'var(--text-dim)'
+                            }
+                        },
+                            React.createElement('p', null, 'Run your query to see results here'),
+                            React.createElement('p', { style: { fontSize: '14px', marginTop: '0.5rem' } }, 
+                                'Use Ctrl+Enter for quick run'
+                            )
+                        )
+                    )
+                ),
+                
+                // Achievement Popup
+                showAchievement && React.createElement('div', { className: 'achievement-popup' },
+                    React.createElement('div', { className: 'achievement-content' },
+                        React.createElement('span', { className: 'achievement-icon' }, 
+                            showAchievement.icon
+                        ),
+                        React.createElement('div', { className: 'achievement-text' },
+                            React.createElement('h3', null, showAchievement.title),
+                            React.createElement('p', null, showAchievement.desc)
+                        )
+                    )
+                )
+            );
+        }
+        
+        // Initialize
+        const root = createRoot(document.getElementById('root'));
+        root.render(React.createElement(SQLAcademy));
+    </script>
+</body>
+</html>
