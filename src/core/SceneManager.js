@@ -6,7 +6,7 @@ window.SceneManager = class SceneManager {
         this.camera = null;
         this.renderer = null;
         this.raycaster = null;
-        this.mouse = new THREE.Vector2();
+        this.mouse = null; // Will be initialized when THREE is available
         
         // Objects
         this.cosmicOrb = null;
@@ -22,6 +22,9 @@ window.SceneManager = class SceneManager {
     }
     
     init(canvas) {
+        // Initialize mouse vector now that THREE is available
+        this.mouse = new THREE.Vector2();
+        
         // Create scene
         this.scene = new THREE.Scene();
         this.scene.fog = new THREE.Fog(0x0a0a0f, 50, 200);

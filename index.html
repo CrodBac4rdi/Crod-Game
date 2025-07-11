@@ -164,8 +164,18 @@
     
     <!-- Initialize Game -->
     <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded');
+        // Wait for Three.js to load
+        function checkThreeJS() {
+            if (typeof THREE === 'undefined') {
+                console.log('Waiting for Three.js...');
+                setTimeout(checkThreeJS, 100);
+                return;
+            }
+            console.log('Three.js loaded, starting game...');
+            initGame();
+        }
+        
+        function initGame() {
             try {
                 console.log('Creating game...');
                 const game = new CosmicClicker();
@@ -175,6 +185,11 @@
                 console.error('Game initialization failed:', error);
                 document.getElementById('loading-text').textContent = 'Error: ' + error.message;
             }
+        }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded');
+            checkThreeJS();
         });
     </script>
     
