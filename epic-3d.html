@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPIC 3D SPACE CLICKER</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, sans-serif; 
+            overflow: hidden; 
+            background: #000;
+            color: white;
+        }
+        #canvas { position: fixed; top: 0; left: 0; }
+        
+        .ui {
+            position: fixed;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .ui > * { pointer-events: auto; }
+        
+        .energy-display {
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            background: rgba(0,0,0,0.8);
+            padding: 20px 40px;
+            border-radius: 30px;
+            border: 3px solid;
+            border-image: linear-gradient(45deg, #0ff, #f0f) 1;
+            backdrop-filter: blur(10px);
+        }
+        
+        .energy-amount {
+            font-size: 64px;
+            font-weight: 900;
+            background: linear-gradient(45deg, #0ff, #f0f, #ff0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 20px #0ff);
+        }
+        
+        .energy-rate {
+            font-size: 20px;
+            color: #0ff;
+        }
+        
+        .upgrades {
+            right: 20px;
+            top: 20px;
+            width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.9);
+            border: 2px solid #0ff;
+            border-radius: 20px;
+            padding: 20px;
+        }
+        
+        .upgrades::-webkit-scrollbar { width: 6px; }
+        .upgrades::-webkit-scrollbar-track { background: #111; }
+        .upgrades::-webkit-scrollbar-thumb { background: #0ff; border-radius: 3px; }
+        
+        .upgrade {
+            background: rgba(0,255,255,0.1);
+            border: 2px solid #044;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upgrade:hover {
+            transform: translateX(-5px) scale(1.02);
+            border-color: #0ff;
+            box-shadow: 0 0 30px rgba(0,255,255,0.5);
+            background: rgba(0,255,255,0.2);
+        }
+        
+        .upgrade.can-afford {
+            border-color: #0f0;
+            animation: glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px #0f0; }
+            50% { box-shadow: 0 0 40px #0f0, 0 0 60px #0f0; }
+        }
+        
+        .instructions {
+            bottom: 30px;
+            left: 30px;
+            font-size: 18px;
+            opacity: 0.8;
+            text-shadow: 0 0 10px #0ff;
+        }
+        
+        .power-display {
+            top: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            text-align: center;
+        }
+        
+        .click-power {
+            color: #ff0;
+            font-weight: 700;
+        }
+        
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #f0f;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="ui energy-display">
+        <div class="energy-amount" id="energy">0</div>
+        <div class="energy-rate"><span id="rate">0</span> /sec</div>
+    </div>
+    
+    <div class="ui power-display">
+        Click Power: <span class="click-power" id="clickPower">1</span>
+    </div>
+    
+    <div class="ui upgrades">
+        <h2>🚀 UPGRADES</h2>
+        <div id="upgradesList"></div>
+    </div>
+    
+    <div class="ui instructions">
+        🖱️ Click the cosmic objects! | Drag to rotate | Scroll to zoom
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+    <script>
+        // Game State
+        let game = {
+            energy: 0,
+            energyPerSecond: 0,
+            clickPower: 1,
+            totalClicks: 0,
+            generators: [
+                { name: '🤖 Nano Bots', cost: 10, prod: 0.1, level: 0, model: null },
+                { name: '⚡ Tesla Coil', cost: 100, prod: 1, level: 0, model: null },
+                { name: '🌟 Star Harvester', cost: 1000, prod: 10, level: 0, model: null },
+                { name: '🌀 Wormhole', cost: 10000, prod: 100, level: 0, model: null },
+                { name: '⚫ Dark Matter', cost: 100000, prod: 1000, level: 0, model: null }
+            ]
+        };
+        
+        // Three.js setup
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.Fog(0x000033, 1, 100);
+        
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 30);
+        
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0x222244, 0.5);
+        scene.add(ambientLight);
+        
+        const pointLight1 = new THREE.PointLight(0x00ffff, 2, 100);
+        pointLight1.position.set(20, 20, 20);
+        pointLight1.castShadow = true;
+        scene.add(pointLight1);
+        
+        const pointLight2 = new THREE.PointLight(0xff00ff, 2, 100);
+        pointLight2.position.set(-20, -20, -20);
+        scene.add(pointLight2);
+        
+        // Main clickable planet
+        const planetGeometry = new THREE.SphereGeometry(5, 64, 64);
+        const planetMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0x0088ff,
+            emissive: 0x004488,
+            emissiveIntensity: 0.5,
+            metalness: 0.7,
+            roughness: 0.3,
+            clearcoat: 1,
+            clearcoatRoughness: 0,
+        });
+        const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+        planet.castShadow = true;
+        planet.receiveShadow = true;
+        planet.userData = { clickable: true, baseValue: 1 };
+        scene.add(planet);
+        
+        // Planet glow
+        const glowGeometry = new THREE.SphereGeometry(5.5, 32, 32);
+        const glowMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00ffff,
+            transparent: true,
+            opacity: 0.15,
+            side: THREE.BackSide
+        });
+        const planetGlow = new THREE.Mesh(glowGeometry, glowMaterial);
+        planet.add(planetGlow);
+        
+        // Particle ring around planet
+        const ringGeometry = new THREE.TorusGeometry(8, 0.5, 16, 100);
+        const ringMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0x00ffff,
+            emissive: 0x00ffff,
+            emissiveIntensity: 0.5,
+            transparent: true,
+            opacity: 0.7,
+            metalness: 1,
+            roughness: 0
+        });
+        const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+        ring.rotation.x = Math.PI / 2;
+        planet.add(ring);
+        
+        // Floating crystals
+        const crystals = [];
+        const crystalGeometry = new THREE.OctahedronGeometry(1, 0);
+        
+        for (let i = 0; i < 20; i++) {
+            const crystalMaterial = new THREE.MeshPhysicalMaterial({
+                color: new THREE.Color().setHSL(Math.random(), 1, 0.5),
+                emissive: new THREE.Color().setHSL(Math.random(), 1, 0.3),
+                emissiveIntensity: 1,
+                metalness: 0.8,
+                roughness: 0.2,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const crystal = new THREE.Mesh(crystalGeometry, crystalMaterial);
+            crystal.position.set(
+                (Math.random() - 0.5) * 40,
+                (Math.random() - 0.5) * 20,
+                (Math.random() - 0.5) * 40
+            );
+            crystal.rotation.set(
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+                Math.random() * Math.PI
+            );
+            crystal.scale.setScalar(0.5 + Math.random() * 1.5);
+            crystal.userData = { 
+                clickable: true, 
+                baseValue: 5 + Math.floor(Math.random() * 20),
+                rotationSpeed: {
+                    x: (Math.random() - 0.5) * 0.05,
+                    y: (Math.random() - 0.5) * 0.05,
+                    z: (Math.random() - 0.5) * 0.05
+                },
+                floatSpeed: Math.random() * 0.002 + 0.001,
+                floatOffset: Math.random() * Math.PI * 2
+            };
+            crystal.castShadow = true;
+            crystals.push(crystal);
+            scene.add(crystal);
+        }
+        
+        // Background stars
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsPositions = [];
+        const starsColors = [];
+        
+        for (let i = 0; i < 10000; i++) {
+            starsPositions.push(
+                (Math.random() - 0.5) * 500,
+                (Math.random() - 0.5) * 500,
+                (Math.random() - 0.5) * 500
+            );
+            
+            const color = new THREE.Color();
+            color.setHSL(Math.random(), 0.5, 0.8);
+            starsColors.push(color.r, color.g, color.b);
+        }
+        
+        starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsPositions, 3));
+        starsGeometry.setAttribute('color', new THREE.Float32BufferAttribute(starsColors, 3));
+        
+        const starsMaterial = new THREE.PointsMaterial({
+            size: 0.5,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
+        });
+        
+        const stars = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(stars);
+        
+        // Particle system for clicks
+        const clickParticles = [];
+        
+        function createClickParticles(point) {
+            const particleCount = 30;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const velocities = [];
+            
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] = point.x;
+                positions[i * 3 + 1] = point.y;
+                positions[i * 3 + 2] = point.z;
+                
+                velocities.push(new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.5,
+                    (Math.random() - 0.5) * 0.5,
+                    (Math.random() - 0.5) * 0.5
+                ));
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const material = new THREE.PointsMaterial({
+                color: 0x00ffff,
+                size: 1,
+                transparent: true,
+                opacity: 1,
+                blending: THREE.AdditiveBlending
+            });
+            
+            const particles = new THREE.Points(geometry, material);
+            particles.userData = { velocities, life: 1 };
+            clickParticles.push(particles);
+            scene.add(particles);
+        }
+        
+        // Mouse interaction
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let isDragging = false;
+        let previousMouseX = 0;
+        let previousMouseY = 0;
+        
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            if (isDragging) {
+                const deltaX = event.clientX - previousMouseX;
+                const deltaY = event.clientY - previousMouseY;
+                
+                scene.rotation.y += deltaX * 0.01;
+                scene.rotation.x += deltaY * 0.01;
+                scene.rotation.x = Math.max(-Math.PI / 4, Math.min(Math.PI / 4, scene.rotation.x));
+            }
+            
+            previousMouseX = event.clientX;
+            previousMouseY = event.clientY;
+        }
+        
+        function onMouseDown(event) {
+            if (event.button === 0) { // Left click
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects([planet, ...crystals]);
+                
+                if (intersects.length > 0) {
+                    const object = intersects[0].object;
+                    if (object.userData.clickable) {
+                        const value = object.userData.baseValue * game.clickPower;
+                        game.energy += value;
+                        game.totalClicks++;
+                        
+                        // Visual feedback
+                        object.scale.setScalar(object.scale.x * 1.2);
+                        setTimeout(() => object.scale.setScalar(object.scale.x / 1.2), 200);
+                        
+                        // Particles
+                        createClickParticles(intersects[0].point);
+                        
+                        // Floating text
+                        showFloatingText(event.clientX, event.clientY, `+${formatNumber(value)}`);
+                    }
+                } else {
+                    isDragging = true;
+                }
+            }
+        }
+        
+        function onMouseUp() {
+            isDragging = false;
+        }
+        
+        function onWheel(event) {
+            camera.position.z += event.deltaY * 0.05;
+            camera.position.z = Math.max(10, Math.min(50, camera.position.z));
+        }
+        
+        // Event listeners
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mousedown', onMouseDown);
+        window.addEventListener('mouseup', onMouseUp);
+        window.addEventListener('wheel', onWheel);
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // UI Functions
+        function formatNumber(num) {
+            if (num < 1000) return Math.floor(num).toString();
+            if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
+            if (num < 1000000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num < 1000000000000) return (num / 1000000000).toFixed(1) + 'B';
+            return (num / 1000000000000).toFixed(1) + 'T';
+        }
+        
+        function showFloatingText(x, y, text) {
+            const div = document.createElement('div');
+            div.style.position = 'fixed';
+            div.style.left = x + 'px';
+            div.style.top = y + 'px';
+            div.style.fontSize = '36px';
+            div.style.fontWeight = '900';
+            div.style.color = '#0ff';
+            div.style.textShadow = '0 0 20px #0ff';
+            div.style.pointerEvents = 'none';
+            div.style.zIndex = '1000';
+            div.textContent = text;
+            div.style.animation = 'floatUp 2s ease-out forwards';
+            document.body.appendChild(div);
+            
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes floatUp {
+                    to {
+                        transform: translateY(-150px);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            setTimeout(() => div.remove(), 2000);
+        }
+        
+        function updateUI() {
+            document.getElementById('energy').textContent = formatNumber(game.energy);
+            document.getElementById('rate').textContent = formatNumber(game.energyPerSecond);
+            document.getElementById('clickPower').textContent = formatNumber(game.clickPower);
+            
+            const list = document.getElementById('upgradesList');
+            list.innerHTML = '';
+            
+            game.generators.forEach((gen, index) => {
+                const cost = Math.floor(gen.cost * Math.pow(1.2, gen.level));
+                const canAfford = game.energy >= cost;
+                
+                const div = document.createElement('div');
+                div.className = `upgrade ${canAfford ? 'can-afford' : ''}`;
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>${gen.name}</span>
+                        <span style="color: #f0f;">Lv. ${gen.level}</span>
+                    </div>
+                    <div style="color: #ff0; margin: 5px 0;">Cost: ${formatNumber(cost)}</div>
+                    <div style="color: #0f0; font-size: 14px;">+${formatNumber(gen.prod * gen.level)} /sec</div>
+                `;
+                
+                div.onclick = () => buyGenerator(index);
+                list.appendChild(div);
+            });
+        }
+        
+        function buyGenerator(index) {
+            const gen = game.generators[index];
+            const cost = Math.floor(gen.cost * Math.pow(1.2, gen.level));
+            
+            if (game.energy >= cost) {
+                game.energy -= cost;
+                gen.level++;
+                
+                // Create 3D model for generator
+                if (!gen.model && gen.level === 1) {
+                    const geometry = new THREE.BoxGeometry(2, 2, 2);
+                    const material = new THREE.MeshPhysicalMaterial({
+                        color: new THREE.Color().setHSL(index / 5, 1, 0.5),
+                        emissive: new THREE.Color().setHSL(index / 5, 1, 0.3),
+                        emissiveIntensity: 0.5,
+                        metalness: 0.8,
+                        roughness: 0.2
+                    });
+                    gen.model = new THREE.Mesh(geometry, material);
+                    gen.model.position.set(
+                        Math.cos(index * Math.PI * 2 / 5) * 15,
+                        0,
+                        Math.sin(index * Math.PI * 2 / 5) * 15
+                    );
+                    gen.model.castShadow = true;
+                    scene.add(gen.model);
+                }
+                
+                // Scale up model
+                if (gen.model) {
+                    gen.model.scale.setScalar(1 + gen.level * 0.1);
+                }
+                
+                // Recalculate production
+                game.energyPerSecond = game.generators.reduce((sum, g) => sum + g.prod * g.level, 0);
+                
+                // Click power bonus every 10 levels
+                if (gen.level % 10 === 0) {
+                    game.clickPower *= 1.5;
+                }
+                
+                updateUI();
+            }
+        }
+        
+        // Animation loop
+        const clock = new THREE.Clock();
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime();
+            
+            // Rotate planet
+            planet.rotation.y += 0.005;
+            ring.rotation.z += 0.01;
+            planetGlow.scale.setScalar(1 + Math.sin(time * 2) * 0.05);
+            
+            // Animate crystals
+            crystals.forEach(crystal => {
+                crystal.rotation.x += crystal.userData.rotationSpeed.x;
+                crystal.rotation.y += crystal.userData.rotationSpeed.y;
+                crystal.rotation.z += crystal.userData.rotationSpeed.z;
+                
+                crystal.position.y += Math.sin(time * crystal.userData.floatSpeed + crystal.userData.floatOffset) * 0.05;
+            });
+            
+            // Animate generators
+            game.generators.forEach(gen => {
+                if (gen.model) {
+                    gen.model.rotation.y += 0.02;
+                    gen.model.position.y = Math.sin(time + gen.model.position.x) * 2;
+                }
+            });
+            
+            // Update particles
+            clickParticles.forEach((particles, index) => {
+                const positions = particles.geometry.attributes.position.array;
+                const velocities = particles.userData.velocities;
+                
+                for (let i = 0; i < velocities.length; i++) {
+                    positions[i * 3] += velocities[i].x;
+                    positions[i * 3 + 1] += velocities[i].y;
+                    positions[i * 3 + 2] += velocities[i].z;
+                }
+                
+                particles.geometry.attributes.position.needsUpdate = true;
+                particles.userData.life -= delta;
+                particles.material.opacity = particles.userData.life;
+                
+                if (particles.userData.life <= 0) {
+                    scene.remove(particles);
+                    clickParticles.splice(index, 1);
+                }
+            });
+            
+            // Rotate stars slowly
+            stars.rotation.y += 0.0001;
+            
+            // Move lights
+            pointLight1.position.x = Math.sin(time * 0.5) * 30;
+            pointLight1.position.z = Math.cos(time * 0.5) * 30;
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Game loop
+        setInterval(() => {
+            game.energy += game.energyPerSecond / 10;
+            updateUI();
+        }, 100);
+        
+        // Save/Load
+        setInterval(() => {
+            localStorage.setItem('epic3DSave', JSON.stringify(game));
+        }, 5000);
+        
+        const saved = localStorage.getItem('epic3DSave');
+        if (saved) {
+            const data = JSON.parse(saved);
+            Object.assign(game, data);
+            game.energyPerSecond = game.generators.reduce((sum, g) => sum + g.prod * g.level, 0);
+        }
+        
+        // Start
+        animate();
+        updateUI();
+    </script>
+</body>
+</html>
