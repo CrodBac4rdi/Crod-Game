@@ -5,25 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DevSim Tycoon - Developer Simulation Game</title>
     <link rel="stylesheet" href="styles.css">
-    
-    <!-- React and Babel for browser -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        /* Additional inline styles for immediate functionality */
+        body {
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        
+        #root {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .loading {
+            text-align: center;
+        }
+        
+        .error {
+            background: #ef4444;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div class="loading">
+            <h1>Loading DevSim Tycoon...</h1>
+            <p>If this message doesn't disappear, <a href="game-simple.html" style="color: #3b82f6;">click here for the simple version</a></p>
+        </div>
+    </div>
     
-    <!-- Game modules -->
-    <script type="text/babel" src="./js/constants.js"></script>
-    <script type="text/babel" src="./js/gameLogic.js"></script>
-    <script type="text/babel" src="./js/components.js"></script>
-    <script type="text/babel" src="./js/game.js"></script>
-    
-    <!-- Initialize the game -->
-    <script type="text/babel">
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<DevSimTycoon />);
+    <!-- Fallback to simple version -->
+    <script>
+        // If loading fails, redirect to simple version
+        setTimeout(function() {
+            const root = document.getElementById('root');
+            if (root && root.innerHTML.includes('Loading')) {
+                window.location.href = 'game-simple.html';
+            }
+        }, 3000);
     </script>
 </body>
 </html>
