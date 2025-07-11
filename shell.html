@@ -1,0 +1,133 @@
+<\!DOCTYPE html>
+<html>
+<head>
+    <title>Test - Cosmic Clicker</title>
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        
+        #canvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+        
+        #ui {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 8px;
+            z-index: 100;
+        }
+        
+        .btn {
+            background: #00d4ff;
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div id="ui">
+        <div id="status">Loading...</div>
+        <button class="btn" onclick="game.click()">Click</button>
+        <div>Energy: <span id="energy">0</span></div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js"></script>
+    
+    <script>
+        const game = {
+            energy: 0,
+            scene: null,
+            camera: null,
+            renderer: null,
+            orb: null,
+            
+            init() {
+                try {
+                    document.getElementById('status').textContent = 'Initializing...';
+                    
+                    // Scene
+                    this.scene = new THREE.Scene();
+                    this.scene.background = new THREE.Color(0x0a0a0f);
+                    
+                    // Camera
+                    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                    this.camera.position.z = 5;
+                    
+                    // Renderer
+                    const canvas = document.getElementById('canvas');
+                    this.renderer = new THREE.WebGLRenderer({ canvas });
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                    
+                    // Orb
+                    const geometry = new THREE.SphereGeometry(1, 32, 32);
+                    const material = new THREE.MeshBasicMaterial({ color: 0x00d4ff });
+                    this.orb = new THREE.Mesh(geometry, material);
+                    this.scene.add(this.orb);
+                    
+                    // Start animation
+                    this.animate();
+                    
+                    document.getElementById('status').textContent = 'Ready\!';
+                    console.log('Game initialized successfully');
+                    
+                } catch (error) {
+                    document.getElementById('status').textContent = 'Error: ' + error.message;
+                    console.error('Game initialization failed:', error);
+                }
+            },
+            
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                
+                if (this.orb) {
+                    this.orb.rotation.y += 0.01;
+                }
+                
+                this.renderer.render(this.scene, this.camera);
+            },
+            
+            click() {
+                this.energy++;
+                document.getElementById('energy').textContent = this.energy;
+                
+                if (this.orb) {
+                    this.orb.scale.setScalar(1.2);
+                    setTimeout(() => this.orb.scale.setScalar(1), 100);
+                }
+                
+                console.log('Click\! Energy:', this.energy);
+            }
+        };
+        
+        window.addEventListener('load', () => {
+            if (typeof THREE \!== 'undefined') {
+                game.init();
+            } else {
+                document.getElementById('status').textContent = 'Three.js failed to load';
+            }
+        });
+        
+        window.addEventListener('error', (e) => {
+            document.getElementById('status').textContent = 'Error: ' + e.message;
+            console.error('Error:', e);
+        });
+    </script>
+</body>
+</html>
+EOF < /dev/null
