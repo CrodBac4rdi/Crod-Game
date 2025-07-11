@@ -37,8 +37,8 @@
 <body>
     <div id="root">
         <div class="loading">
-            <h1>Loading DevSim Tycoon...</h1>
-            <p>If this message doesn't disappear, <a href="game-simple.html" style="color: #3b82f6;">click here for the simple version</a></p>
+            <h1>Game lädt...</h1>
+            <p>Falls das Spiel nicht lädt, <a href="index-react.html" style="color: #3b82f6;">hier klicken</a></p>
         </div>
     </div>
     
@@ -48,7 +48,7 @@
         setTimeout(function() {
             const root = document.getElementById('root');
             if (root && root.innerHTML.includes('Loading')) {
-                window.location.href = 'game-simple.html';
+                window.location.href = 'index-react.html';
             }
         }, 3000);
     </script>
