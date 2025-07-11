@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Energy Clicker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, sans-serif;
+            background: #000;
+            color: white;
+            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .game-container {
+            width: 100%;
+            max-width: 1200px;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .panel {
+            background: rgba(10, 10, 30, 0.9);
+            border: 2px solid #0ff;
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            overflow-y: auto;
+        }
+        
+        .center-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .energy-display {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .energy-amount {
+            font-size: 72px;
+            font-weight: 900;
+            background: linear-gradient(45deg, #0ff, #f0f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+        }
+        
+        .energy-rate {
+            font-size: 24px;
+            color: #0ff;
+            margin-top: 10px;
+        }
+        
+        .click-area {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            cursor: pointer;
+        }
+        
+        .planet {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 30%, #4ff, #00f);
+            border-radius: 50%;
+            box-shadow: 0 0 100px #0ff, inset -20px -20px 50px rgba(0,0,0,0.5);
+            animation: rotate 20s linear infinite;
+            transition: transform 0.1s;
+        }
+        
+        .planet:hover {
+            transform: scale(1.05);
+        }
+        
+        .planet:active {
+            transform: scale(0.95);
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background-image: 
+                radial-gradient(2px 2px at 20% 30%, white, transparent),
+                radial-gradient(2px 2px at 40% 70%, white, transparent),
+                radial-gradient(1px 1px at 50% 50%, white, transparent),
+                radial-gradient(1px 1px at 80% 10%, white, transparent);
+            background-size: 200px 200px;
+            animation: stars 100s linear infinite;
+        }
+        
+        @keyframes stars {
+            from { transform: translateY(0); }
+            to { transform: translateY(-200px); }
+        }
+        
+        .upgrade {
+            background: rgba(50, 50, 100, 0.5);
+            border: 2px solid #333;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upgrade:hover {
+            border-color: #0ff;
+            transform: translateX(-5px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+        
+        .upgrade.can-afford {
+            border-color: #0f0;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .upgrade-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .upgrade-name {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .upgrade-level {
+            color: #f0f;
+        }
+        
+        .upgrade-cost {
+            color: #ff0;
+            margin: 5px 0;
+        }
+        
+        .upgrade-effect {
+            color: #0f0;
+            font-size: 14px;
+        }
+        
+        h2 {
+            text-align: center;
+            color: #f0f;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        .floating-text {
+            position: absolute;
+            pointer-events: none;
+            font-size: 36px;
+            font-weight: 900;
+            color: #0ff;
+            text-shadow: 0 0 20px currentColor;
+            animation: float-up 2s ease-out forwards;
+            z-index: 100;
+        }
+        
+        @keyframes float-up {
+            to {
+                transform: translateY(-150px);
+                opacity: 0;
+            }
+        }
+        
+        .achievement {
+            background: rgba(255, 215, 0, 0.2);
+            border: 2px solid gold;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .achievement.unlocked {
+            opacity: 1;
+        }
+        
+        .achievement:not(.unlocked) {
+            opacity: 0.3;
+            filter: grayscale(1);
+        }
+        
+        .stats {
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #0ff;
+            border-radius: 50%;
+            animation: particle-float 3s ease-out forwards;
+        }
+        
+        @keyframes particle-float {
+            to {
+                transform: translateY(-300px) translateX(var(--x));
+                opacity: 0;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .game-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+            }
+            
+            .panel {
+                max-height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars"></div>
+    
+    <div class="game-container">
+        <div class="panel">
+            <h2>🚀 Generators</h2>
+            <div id="generators"></div>
+        </div>
+        
+        <div class="center-area">
+            <div class="energy-display">
+                <div class="energy-amount" id="energy">0</div>
+                <div class="energy-rate"><span id="rate">0</span> /sec</div>
+            </div>
+            
+            <div class="click-area" onclick="clickPlanet(event)">
+                <div class="planet"></div>
+                <div class="particles" id="particles"></div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <h2>📊 Stats</h2>
+            <div class="stats">
+                <div class="stat-item">
+                    <span>Total Clicks</span>
+                    <span id="totalClicks">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Total Energy</span>
+                    <span id="totalEnergy">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Click Power</span>
+                    <span id="clickPower">1</span>
+                </div>
+                <div class="stat-item">
+                    <span>Play Time</span>
+                    <span id="playTime">0s</span>
+                </div>
+            </div>
+            
+            <h2 style="margin-top: 30px;">🏆 Achievements</h2>
+            <div id="achievements"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Game State
+        let game = {
+            energy: 0,
+            totalEnergy: 0,
+            totalClicks: 0,
+            energyPerSecond: 0,
+            clickPower: 1,
+            startTime: Date.now(),
+            generators: [
+                { id: 'auto', name: '🤖 Auto Clicker', baseCost: 10, production: 0.1, level: 0 },
+                { id: 'solar', name: '☀️ Solar Panel', baseCost: 50, production: 0.5, level: 0 },
+                { id: 'reactor', name: '⚛️ Reactor', baseCost: 500, production: 5, level: 0 },
+                { id: 'quantum', name: '💠 Quantum Gen', baseCost: 5000, production: 50, level: 0 },
+                { id: 'black', name: '⚫ Black Hole', baseCost: 50000, production: 500, level: 0 }
+            ],
+            achievements: [
+                { id: 'first', name: '🎯 First Click', desc: 'Click the planet', requirement: () => game.totalClicks >= 1 },
+                { id: 'hundred', name: '💯 Centurion', desc: '100 total clicks', requirement: () => game.totalClicks >= 100 },
+                { id: 'thousand', name: '🌟 Millennium', desc: '1000 total clicks', requirement: () => game.totalClicks >= 1000 },
+                { id: 'energy1k', name: '⚡ Energized', desc: '1K total energy', requirement: () => game.totalEnergy >= 1000 },
+                { id: 'energy1m', name: '💥 Megawatt', desc: '1M total energy', requirement: () => game.totalEnergy >= 1000000 },
+                { id: 'gen10', name: '🏭 Industrialist', desc: '10 generators total', requirement: () => game.generators.reduce((sum, g) => sum + g.level, 0) >= 10 }
+            ]
+        };
+        
+        // Initialize
+        function init() {
+            loadGame();
+            updateUI();
+            setInterval(gameLoop, 100);
+            setInterval(saveGame, 5000);
+        }
+        
+        // Click handler
+        function clickPlanet(event) {
+            game.energy += game.clickPower;
+            game.totalEnergy += game.clickPower;
+            game.totalClicks++;
+            
+            // Visual feedback
+            createParticles(event);
+            showFloatingText(event.pageX, event.pageY, `+${formatNumber(game.clickPower)}`);
+            
+            updateUI();
+        }
+        
+        // Create particles
+        function createParticles(event) {
+            const rect = event.currentTarget.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            for (let i = 0; i < 10; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.setProperty('--x', (Math.random() - 0.5) * 100 + 'px');
+                
+                document.getElementById('particles').appendChild(particle);
+                setTimeout(() => particle.remove(), 3000);
+            }
+        }
+        
+        // Floating text
+        function showFloatingText(x, y, text) {
+            const div = document.createElement('div');
+            div.className = 'floating-text';
+            div.textContent = text;
+            div.style.left = x + 'px';
+            div.style.top = y + 'px';
+            document.body.appendChild(div);
+            
+            setTimeout(() => div.remove(), 2000);
+        }
+        
+        // Format numbers
+        function formatNumber(num) {
+            if (num < 1000) return Math.floor(num).toString();
+            if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
+            if (num < 1000000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num < 1000000000000) return (num / 1000000000).toFixed(1) + 'B';
+            return (num / 1000000000000).toFixed(1) + 'T';
+        }
+        
+        // Update UI
+        function updateUI() {
+            document.getElementById('energy').textContent = formatNumber(game.energy);
+            document.getElementById('rate').textContent = formatNumber(game.energyPerSecond);
+            document.getElementById('totalClicks').textContent = formatNumber(game.totalClicks);
+            document.getElementById('totalEnergy').textContent = formatNumber(game.totalEnergy);
+            document.getElementById('clickPower').textContent = formatNumber(game.clickPower);
+            
+            const playTime = Math.floor((Date.now() - game.startTime) / 1000);
+            document.getElementById('playTime').textContent = playTime < 60 ? playTime + 's' : Math.floor(playTime / 60) + 'm';
+            
+            // Update generators
+            const genDiv = document.getElementById('generators');
+            genDiv.innerHTML = '';
+            
+            game.generators.forEach((gen, index) => {
+                const cost = Math.floor(gen.baseCost * Math.pow(1.15, gen.level));
+                const canAfford = game.energy >= cost;
+                
+                const div = document.createElement('div');
+                div.className = `upgrade ${canAfford ? 'can-afford' : ''}`;
+                div.innerHTML = `
+                    <div class="upgrade-header">
+                        <span class="upgrade-name">${gen.name}</span>
+                        <span class="upgrade-level">Lv. ${gen.level}</span>
+                    </div>
+                    <div class="upgrade-cost">Cost: ${formatNumber(cost)}</div>
+                    <div class="upgrade-effect">+${formatNumber(gen.production * gen.level)} /sec</div>
+                `;
+                
+                div.onclick = () => buyGenerator(index);
+                genDiv.appendChild(div);
+            });
+            
+            // Update achievements
+            const achDiv = document.getElementById('achievements');
+            achDiv.innerHTML = '';
+            
+            game.achievements.forEach(ach => {
+                const unlocked = ach.requirement();
+                const div = document.createElement('div');
+                div.className = `achievement ${unlocked ? 'unlocked' : ''}`;
+                div.innerHTML = `
+                    <div>${ach.name}</div>
+                    <div style="font-size: 12px; opacity: 0.7;">${ach.desc}</div>
+                `;
+                achDiv.appendChild(div);
+                
+                // Unlock bonus
+                if (unlocked && !ach.claimed) {
+                    ach.claimed = true;
+                    game.clickPower += 1;
+                    showFloatingText(window.innerWidth / 2, 100, 'Achievement Unlocked! +1 Click Power');
+                }
+            });
+        }
+        
+        // Buy generator
+        function buyGenerator(index) {
+            const gen = game.generators[index];
+            const cost = Math.floor(gen.baseCost * Math.pow(1.15, gen.level));
+            
+            if (game.energy >= cost) {
+                game.energy -= cost;
+                gen.level++;
+                calculateProduction();
+                updateUI();
+            }
+        }
+        
+        // Calculate production
+        function calculateProduction() {
+            game.energyPerSecond = game.generators.reduce((sum, gen) => 
+                sum + gen.production * gen.level, 0
+            );
+        }
+        
+        // Game loop
+        function gameLoop() {
+            game.energy += game.energyPerSecond / 10;
+            game.totalEnergy += game.energyPerSecond / 10;
+            updateUI();
+        }
+        
+        // Save/Load
+        function saveGame() {
+            localStorage.setItem('spaceClickerSave', JSON.stringify(game));
+        }
+        
+        function loadGame() {
+            const saved = localStorage.getItem('spaceClickerSave');
+            if (saved) {
+                const data = JSON.parse(saved);
+                Object.assign(game, data);
+                calculateProduction();
+            }
+        }
+        
+        // Start game
+        init();
+    </script>
+</body>
+</html>
