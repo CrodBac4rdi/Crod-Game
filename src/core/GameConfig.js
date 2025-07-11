@@ -101,25 +101,29 @@ window.GameConfig = {
             particleCount: 50,
             shadowQuality: 0,
             antialias: false,
-            postProcessing: false
+            postProcessing: false,
+            targetFPS: 30
         },
         medium: {
             particleCount: 100,
             shadowQuality: 1,
             antialias: true,
-            postProcessing: false
+            postProcessing: false,
+            targetFPS: 60
         },
         high: {
             particleCount: 200,
             shadowQuality: 2,
             antialias: true,
-            postProcessing: true
+            postProcessing: true,
+            targetFPS: 60
         },
         ultra: {
             particleCount: 500,
             shadowQuality: 3,
             antialias: true,
-            postProcessing: true
+            postProcessing: true,
+            targetFPS: 60
         }
     },
     
