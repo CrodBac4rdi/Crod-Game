@@ -44,13 +44,10 @@
     
     <!-- Fallback to simple version -->
     <script>
-        // If loading fails, redirect to simple version
+        // Direct redirect after 1 second
         setTimeout(function() {
-            const root = document.getElementById('root');
-            if (root && root.innerHTML.includes('Loading')) {
-                window.location.href = 'index-grind.html';
-            }
-        }, 3000);
+            window.location.href = 'index-grind.html';
+        }, 1000);
     </script>
 </body>
 </html>
