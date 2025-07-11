@@ -217,25 +217,24 @@
             document.head.appendChild(script);
         }
         
-        function initGame() {
+        async function initGame() {
             try {
                 console.log('Creating game...');
                 
-                // TEMPORARILY DISABLE ASSET SYSTEM
                 // Initialize asset system first (after THREE.js is loaded)
-                // console.log('Initializing asset system...');
-                // window.AssetIntegration = new AssetIntegration();
+                console.log('Initializing asset system...');
+                window.AssetIntegration = new AssetIntegration();
                 
                 // Initialize assets with progress tracking
-                // await window.AssetIntegration.initialize((progress, message) => {
-                //     console.log(`Asset loading: ${progress}% - ${message}`);
-                //     const progressBar = document.getElementById('loading-progress');
-                //     const loadingText = document.getElementById('loading-text');
-                //     if (progressBar) progressBar.style.width = progress + '%';
-                //     if (loadingText) loadingText.textContent = message;
-                // });
+                await window.AssetIntegration.initialize((progress, message) => {
+                    console.log(`Asset loading: ${progress}% - ${message}`);
+                    const progressBar = document.getElementById('loading-progress');
+                    const loadingText = document.getElementById('loading-text');
+                    if (progressBar) progressBar.style.width = progress + '%';
+                    if (loadingText) loadingText.textContent = message;
+                });
                 
-                console.log('Creating game...');
+                console.log('Assets loaded, creating game...');
                 const game = new CosmicClicker();
                 console.log('Game created, initializing...');
                 game.init();
