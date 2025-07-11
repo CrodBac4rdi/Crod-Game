@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Only Debug</title>
+    <style>
+        body { 
+            background: #0a0a0f; 
+            color: #00d4ff; 
+            font-family: monospace;
+            padding: 20px;
+            font-size: 14px;
+        }
+        .debug { 
+            background: #1a1a2e; 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-left: 3px solid #00d4ff;
+        }
+        .error { 
+            border-left-color: #ff3366; 
+            color: #ff3366; 
+        }
+        .success { 
+            border-left-color: #00ff88; 
+            color: #00ff88; 
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 GAME ONLY DEBUG</h1>
+    <div id="log"></div>
+    
+    <script>
+        const log = document.getElementById('log');
+        
+        function addLog(message, type = 'debug') {
+            const div = document.createElement('div');
+            div.className = `debug ${type}`;
+            div.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            log.appendChild(div);
+            console.log(message);
+        }
+        
+        // Step 1: Load Three.js
+        addLog('Loading Three.js...');
+        const threeScript = document.createElement('script');
+        threeScript.src = 'https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js';
+        threeScript.onload = () => {
+            addLog('Three.js loaded successfully', 'success');
+            loadCore();
+        };
+        threeScript.onerror = () => {
+            addLog('Three.js failed to load', 'error');
+        };
+        document.head.appendChild(threeScript);
+        
+        // Step 2: Load Core Files
+        function loadCore() {
+            addLog('Loading core files...');
+            
+            const coreFiles = [
+                'src/core/GameConfig.js',
+                'src/core/EventSystem.js',
+                'src/core/SaveManager.js',
+                'src/game/GameState.js',
+                'src/game/UpgradeManager.js',
+                'src/game/AchievementManager.js',
+                'src/game/ClickManager.js',
+                'src/ui/UIManager.js',
+                'src/ui/NotificationManager.js',
+                'src/ui/FloatingTextManager.js',
+                'src/utils/MathUtils.js',
+                'src/utils/FormatUtils.js',
+                'src/core/SceneManager.js'
+            ];
+            
+            let loaded = 0;
+            
+            coreFiles.forEach((file, index) => {
+                const script = document.createElement('script');
+                script.src = file;
+                script.onload = () => {
+                    loaded++;
+                    addLog(`Loaded ${file}`, 'success');
+                    if (loaded === coreFiles.length) {
+                        loadGameClass();
+                    }
+                };
+                script.onerror = () => {
+                    addLog(`Failed to load ${file}`, 'error');
+                };
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Step 3: Load Game Class
+        function loadGameClass() {
+            addLog('Loading Game class...');
+            
+            const script = document.createElement('script');
+            script.src = 'src/core/Game.js';
+            script.onload = () => {
+                addLog('Game class loaded', 'success');
+                testGameCreation();
+            };
+            script.onerror = () => {
+                addLog('Game class failed to load', 'error');
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Step 4: Test Game Creation
+        function testGameCreation() {
+            addLog('Testing game creation...');
+            
+            try {
+                // Check if required classes exist
+                const requiredClasses = [
+                    'GameConfig', 'EventSystem', 'GameState', 'SaveManager',
+                    'SceneManager', 'UpgradeManager', 'AchievementManager',
+                    'ClickManager', 'UIManager', 'NotificationManager',
+                    'FloatingTextManager', 'MathUtils', 'FormatUtils'
+                ];
+                
+                for (const className of requiredClasses) {
+                    if (typeof window[className] === 'undefined') {
+                        addLog(`Missing class: ${className}`, 'error');
+                        return;
+                    } else {
+                        addLog(`✓ Found class: ${className}`, 'success');
+                    }
+                }
+                
+                // Try to create the game
+                addLog('Creating CosmicClicker instance...');
+                const game = new CosmicClicker();
+                
+                addLog('✅ GAME CREATED SUCCESSFULLY!', 'success');
+                addLog(`Game instance: ${typeof game}`, 'success');
+                addLog(`EventSystem: ${typeof game.eventSystem}`, 'success');
+                addLog(`GameState: ${typeof game.gameState}`, 'success');
+                addLog(`SceneManager: ${typeof game.sceneManager}`, 'success');
+                
+                // Test basic functionality
+                addLog('Testing basic game functionality...');
+                
+                if (game.gameState && game.gameState.addEnergy) {
+                    game.gameState.addEnergy(100);
+                    addLog('✓ Energy addition test passed', 'success');
+                }
+                
+                if (game.eventSystem && game.eventSystem.emit) {
+                    game.eventSystem.emit('TEST_EVENT', { test: true });
+                    addLog('✓ Event system test passed', 'success');
+                }
+                
+                addLog('🎉 ALL TESTS PASSED!', 'success');
+                
+            } catch (error) {
+                addLog(`❌ Game creation failed: ${error.message}`, 'error');
+                addLog(`Stack trace: ${error.stack}`, 'error');
+            }
+        }
+        
+        // Global error handler
+        window.addEventListener('error', (e) => {
+            addLog(`Global error: ${e.message} at ${e.filename}:${e.lineno}`, 'error');
+        });
+        
+        addLog('Debug started...');
+    </script>
+</body>
+</html>

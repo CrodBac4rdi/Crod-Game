@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step-by-Step Debug</title>
+    <style>
+        body { 
+            background: #000; 
+            color: #0f0; 
+            font-family: monospace; 
+            padding: 20px;
+            font-size: 14px;
+        }
+        .step { 
+            margin: 10px 0; 
+            padding: 10px; 
+            background: #111; 
+            border-left: 3px solid #0f0;
+        }
+        .error { 
+            border-left-color: #f00; 
+            color: #f00; 
+        }
+        .loading { 
+            border-left-color: #ff0; 
+            color: #ff0; 
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 DEBUG STEP-BY-STEP</h1>
+    <div id="log"></div>
+    
+    <script>
+        const log = document.getElementById('log');
+        
+        function addStep(text, type = 'success') {
+            const step = document.createElement('div');
+            step.className = `step ${type}`;
+            step.textContent = `${new Date().toLocaleTimeString()}: ${text}`;
+            log.appendChild(step);
+            console.log(text);
+        }
+        
+        function addError(text) {
+            addStep(`❌ ERROR: ${text}`, 'error');
+        }
+        
+        function addLoading(text) {
+            addStep(`⏳ LOADING: ${text}`, 'loading');
+        }
+        
+        function addSuccess(text) {
+            addStep(`✅ SUCCESS: ${text}`, 'success');
+        }
+        
+        // Step 1: Basic HTML/CSS
+        addSuccess('HTML loaded successfully');
+        
+        // Step 2: Test Three.js loading
+        addLoading('Loading Three.js...');
+        
+        const threeScript = document.createElement('script');
+        threeScript.src = 'https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js';
+        threeScript.onload = () => {
+            addSuccess('Three.js loaded successfully');
+            testThreeJS();
+        };
+        threeScript.onerror = () => {
+            addError('Three.js failed to load');
+        };
+        document.head.appendChild(threeScript);
+        
+        function testThreeJS() {
+            try {
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer();
+                addSuccess('Three.js WebGL test passed');
+                loadGameConfig();
+            } catch (error) {
+                addError('Three.js WebGL test failed: ' + error.message);
+            }
+        }
+        
+        // Step 3: Load GameConfig
+        function loadGameConfig() {
+            addLoading('Loading GameConfig...');
+            const script = document.createElement('script');
+            script.src = 'src/core/GameConfig.js';
+            script.onload = () => {
+                if (typeof GameConfig !== 'undefined') {
+                    addSuccess('GameConfig loaded successfully');
+                    loadEventSystem();
+                } else {
+                    addError('GameConfig not defined');
+                }
+            };
+            script.onerror = () => {
+                addError('GameConfig failed to load');
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Step 4: Load EventSystem
+        function loadEventSystem() {
+            addLoading('Loading EventSystem...');
+            const script = document.createElement('script');
+            script.src = 'src/core/EventSystem.js';
+            script.onload = () => {
+                if (typeof EventSystem !== 'undefined') {
+                    addSuccess('EventSystem loaded successfully');
+                    loadAssetSystem();
+                } else {
+                    addError('EventSystem not defined');
+                }
+            };
+            script.onerror = () => {
+                addError('EventSystem failed to load');
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Step 5: Load Asset System
+        function loadAssetSystem() {
+            addLoading('Loading Asset System...');
+            const assetFiles = [
+                'src/assets/sounds/AudioSystem.js',
+                'src/assets/textures/TextureManager.js',
+                'src/assets/models/ModelGenerator.js',
+                'src/assets/AssetLoader.js',
+                'src/assets/PerformanceOptimizer.js',
+                'src/assets/AssetIntegration.js'
+            ];
+            
+            let loadedCount = 0;
+            
+            assetFiles.forEach(file => {
+                const script = document.createElement('script');
+                script.src = file;
+                script.onload = () => {
+                    loadedCount++;
+                    addSuccess(`Loaded ${file}`);
+                    if (loadedCount === assetFiles.length) {
+                        testAssetSystem();
+                    }
+                };
+                script.onerror = () => {
+                    addError(`Failed to load ${file}`);
+                };
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Step 6: Test Asset System
+        function testAssetSystem() {
+            addLoading('Testing Asset System...');
+            try {
+                const assetIntegration = new AssetIntegration();
+                addSuccess('AssetIntegration created successfully');
+                loadGameCore();
+            } catch (error) {
+                addError('AssetIntegration failed: ' + error.message);
+            }
+        }
+        
+        // Step 7: Load Game Core
+        function loadGameCore() {
+            addLoading('Loading Game Core...');
+            const coreFiles = [
+                'src/core/SaveManager.js',
+                'src/game/GameState.js',
+                'src/game/UpgradeManager.js',
+                'src/game/AchievementManager.js',
+                'src/game/ClickManager.js',
+                'src/ui/UIManager.js',
+                'src/ui/NotificationManager.js',
+                'src/ui/FloatingTextManager.js',
+                'src/utils/MathUtils.js',
+                'src/utils/FormatUtils.js',
+                'src/core/SceneManager.js',
+                'src/core/Game.js'
+            ];
+            
+            let loadedCount = 0;
+            
+            coreFiles.forEach(file => {
+                const script = document.createElement('script');
+                script.src = file;
+                script.onload = () => {
+                    loadedCount++;
+                    addSuccess(`Loaded ${file}`);
+                    if (loadedCount === coreFiles.length) {
+                        testGameCreation();
+                    }
+                };
+                script.onerror = () => {
+                    addError(`Failed to load ${file}`);
+                };
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Step 8: Test Game Creation
+        function testGameCreation() {
+            addLoading('Testing Game Creation...');
+            try {
+                const game = new CosmicClicker();
+                addSuccess('✅ GAME CREATED SUCCESSFULLY!');
+                addSuccess('🎮 Ready to initialize game');
+            } catch (error) {
+                addError('Game creation failed: ' + error.message);
+                addError('Stack: ' + error.stack);
+            }
+        }
+        
+        // Global error handler
+        window.addEventListener('error', (e) => {
+            addError(`Global error: ${e.message} at ${e.filename}:${e.lineno}`);
+        });
+        
+        // Global unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', (e) => {
+            addError(`Unhandled promise rejection: ${e.reason}`);
+        });
+    </script>
+</body>
+</html>

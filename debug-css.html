@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Debug Test</title>
+    <link rel="stylesheet" href="src/styles/main.css">
+    <link rel="stylesheet" href="src/styles/ui.css">
+    <link rel="stylesheet" href="src/styles/effects.css">
+    <link rel="stylesheet" href="src/styles/responsive.css">
+    <link rel="stylesheet" href="src/styles/performance.css">
+    <style>
+        .debug-info {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: lime;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-info">
+        <h3>CSS DEBUG</h3>
+        <p>If you see styled content, CSS works!</p>
+    </div>
+    
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <h1 class="loading-title">COSMIC CLICKER 3D</h1>
+            <div class="loading-bar">
+                <div class="loading-progress" id="loading-progress" style="width: 50%;"></div>
+            </div>
+            <p class="loading-text" id="loading-text">CSS TEST...</p>
+        </div>
+    </div>
+
+    <div id="game-container" class="game-container" style="display: block;">
+        <div class="game-ui">
+            <div class="top-bar">
+                <div class="resource-panel">
+                    <div class="resource energy">
+                        <span class="resource-icon">⚡</span>
+                        <span class="resource-value">1000</span>
+                        <span class="resource-rate">+50 /s</span>
+                    </div>
+                    <div class="resource crystals">
+                        <span class="resource-icon">💎</span>
+                        <span class="resource-value">25</span>
+                    </div>
+                </div>
+                
+                <div class="level-panel">
+                    <div class="level-info">
+                        <span class="level-label">Level</span>
+                        <span class="level-value">5</span>
+                    </div>
+                    <div class="xp-bar">
+                        <div class="xp-fill" style="width: 75%;"></div>
+                        <span class="xp-text">750 / 1000 XP</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="side-panel">
+                <div class="panel-tabs">
+                    <button class="tab-btn active">Upgrades</button>
+                    <button class="tab-btn">Skills</button>
+                    <button class="tab-btn">Stats</button>
+                </div>
+                
+                <div class="panel-content">
+                    <div class="tab-content active">
+                        <h3>🚀 Generators</h3>
+                        <div class="upgrades-list">
+                            <div class="upgrade-item available">
+                                <div class="upgrade-icon">☀️</div>
+                                <div class="upgrade-info">
+                                    <div class="upgrade-name">Solar Panel</div>
+                                    <div class="upgrade-description">Generates 0.1 energy/s</div>
+                                </div>
+                                <div class="upgrade-cost">10 Energy</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        console.log('CSS Debug page loaded');
+        
+        // Test CSS properties
+        const testElement = document.querySelector('.loading-title');
+        if (testElement) {
+            const styles = window.getComputedStyle(testElement);
+            console.log('CSS Test Results:');
+            console.log('Color:', styles.color);
+            console.log('Font size:', styles.fontSize);
+            console.log('Background:', styles.backgroundColor);
+            
+            if (styles.color === 'rgb(255, 255, 255)' || styles.color === '#ffffff') {
+                console.log('✅ CSS loaded successfully!');
+            } else {
+                console.log('❌ CSS not loaded properly');
+            }
+        }
+        
+        // Check if CSS variables are working
+        const root = document.documentElement;
+        const primaryColor = getComputedStyle(root).getPropertyValue('--color-primary');
+        console.log('CSS Variable test:', primaryColor);
+        
+        if (primaryColor.includes('00d4ff')) {
+            console.log('✅ CSS variables working!');
+        } else {
+            console.log('❌ CSS variables not working');
+        }
+    </script>
+</body>
+</html>

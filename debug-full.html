@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Debug - Cosmic Clicker 3D</title>
+    
+    <!-- Load CSS with error handling -->
+    <style>
+        /* Embedded critical CSS */
+        body {
+            margin: 0; padding: 0; box-sizing: border-box;
+            background: #0a0a0f; color: #00d4ff;
+            font-family: Arial, sans-serif;
+            position: relative;
+        }
+        
+        .debug-overlay {
+            position: fixed; top: 0; left: 0; width: 250px; height: 100vh;
+            background: rgba(0, 0, 0, 0.9); color: #00ff88;
+            padding: 10px; font-family: monospace; font-size: 11px;
+            z-index: 99999; overflow-y: auto;
+            border-right: 2px solid #00ff88;
+        }
+        
+        .debug-entry {
+            margin: 2px 0; padding: 2px 5px;
+            background: rgba(0, 255, 136, 0.1);
+            border-left: 2px solid #00ff88;
+        }
+        
+        .debug-error {
+            border-left-color: #ff3366;
+            color: #ff3366;
+            background: rgba(255, 51, 102, 0.1);
+        }
+        
+        .debug-warning {
+            border-left-color: #ffaa00;
+            color: #ffaa00;
+            background: rgba(255, 170, 0, 0.1);
+        }
+        
+        .loading-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #0a0a0f; display: flex; align-items: center;
+            justify-content: center; z-index: 9998;
+        }
+        
+        .loading-content {
+            text-align: center; color: #00d4ff;
+        }
+        
+        .loading-title {
+            font-size: 3rem; margin-bottom: 20px;
+            text-shadow: 0 0 20px #00d4ff;
+        }
+        
+        .loading-bar {
+            width: 400px; height: 20px; background: #1a1a2e;
+            border-radius: 10px; overflow: hidden; margin: 20px auto;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+        
+        .loading-progress {
+            height: 100%; background: linear-gradient(90deg, #00d4ff, #ff00ff);
+            transition: width 0.3s ease; width: 0%;
+        }
+        
+        .loading-text {
+            font-size: 1.2rem; margin-top: 20px;
+        }
+        
+        .game-container {
+            display: none; margin-left: 250px;
+        }
+        
+        canvas {
+            display: block; margin: 20px auto;
+            border: 2px solid #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+        
+        .game-ui {
+            position: fixed; top: 0; right: 0; bottom: 0; left: 250px;
+            pointer-events: none;
+        }
+        
+        .game-ui > * {
+            pointer-events: all;
+        }
+        
+        .top-bar {
+            position: absolute; top: 20px; left: 20px; right: 20px;
+            display: flex; justify-content: space-between;
+            background: rgba(26, 26, 46, 0.9);
+            padding: 15px; border-radius: 10px;
+            border: 1px solid #303045;
+        }
+        
+        .resource-panel {
+            display: flex; gap: 20px;
+        }
+        
+        .resource {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 12px; background: rgba(0, 212, 255, 0.1);
+            border-radius: 6px; border: 1px solid #00d4ff;
+        }
+        
+        .resource-icon {
+            font-size: 1.2rem;
+        }
+        
+        .resource-value {
+            font-weight: bold; color: #ffffff;
+        }
+        
+        .resource-rate {
+            color: #00ff88; font-size: 0.9rem;
+        }
+        
+        .level-panel {
+            display: flex; align-items: center; gap: 15px;
+        }
+        
+        .level-info {
+            display: flex; flex-direction: column; align-items: center;
+        }
+        
+        .level-label {
+            font-size: 0.8rem; color: #b0b0c0;
+        }
+        
+        .level-value {
+            font-size: 1.5rem; font-weight: bold; color: #ffaa00;
+        }
+        
+        .xp-bar {
+            position: relative; width: 200px; height: 15px;
+            background: #1a1a2e; border-radius: 8px; overflow: hidden;
+            border: 1px solid #303045;
+        }
+        
+        .xp-fill {
+            height: 100%; background: linear-gradient(90deg, #ffaa00, #ff6600);
+            transition: width 0.3s ease; width: 0%;
+        }
+        
+        .xp-text {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.8rem; color: #ffffff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+        
+        .side-panel {
+            position: absolute; top: 100px; left: 20px;
+            width: 300px; height: calc(100vh - 140px);
+            background: rgba(26, 26, 46, 0.95);
+            border: 1px solid #303045; border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .panel-tabs {
+            display: flex; border-bottom: 1px solid #303045;
+        }
+        
+        .tab-btn {
+            flex: 1; padding: 12px; background: transparent;
+            border: none; color: #b0b0c0; cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-btn:hover {
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+        }
+        
+        .tab-btn.active {
+            color: #00d4ff; border-bottom-color: #00d4ff;
+        }
+        
+        .panel-content {
+            padding: 20px; height: calc(100% - 50px);
+            overflow-y: auto;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .tab-content h3 {
+            color: #ffffff; margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .upgrades-list {
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        
+        .upgrade-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px; background: rgba(47, 47, 62, 0.5);
+            border-radius: 8px; border: 1px solid #303045;
+            transition: all 0.3s ease;
+        }
+        
+        .upgrade-item:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: #00d4ff;
+        }
+        
+        .upgrade-icon {
+            font-size: 1.5rem;
+        }
+        
+        .upgrade-info {
+            flex: 1;
+        }
+        
+        .upgrade-name {
+            font-weight: bold; color: #ffffff;
+        }
+        
+        .upgrade-description {
+            font-size: 0.9rem; color: #b0b0c0;
+        }
+        
+        .upgrade-cost {
+            color: #ffaa00; font-weight: bold;
+        }
+        
+        .bottom-bar {
+            position: absolute; bottom: 20px; left: 20px; right: 20px;
+            display: flex; justify-content: center; gap: 20px;
+        }
+        
+        .action-btn {
+            padding: 12px 24px; background: linear-gradient(45deg, #00d4ff, #0088cc);
+            border: none; border-radius: 8px; color: #ffffff;
+            font-weight: bold; cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.5);
+        }
+        
+        .btn-icon {
+            margin-right: 8px;
+        }
+        
+        .floating-texts {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none; z-index: 1000;
+        }
+        
+        .notifications {
+            position: fixed; top: 20px; right: 20px;
+            z-index: 1001;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-overlay">
+        <h3>🔍 DEBUG LOG</h3>
+        <div id="debug-log"></div>
+    </div>
+    
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <h1 class="loading-title">COSMIC CLICKER 3D</h1>
+            <div class="loading-bar">
+                <div class="loading-progress" id="loading-progress"></div>
+            </div>
+            <p class="loading-text" id="loading-text">Starting comprehensive debug...</p>
+        </div>
+    </div>
+
+    <div id="game-container" class="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <div class="game-ui">
+            <div class="top-bar">
+                <div class="resource-panel">
+                    <div class="resource energy">
+                        <span class="resource-icon">⚡</span>
+                        <span class="resource-value" id="energy-value">0</span>
+                        <span class="resource-rate" id="energy-rate">+0 /s</span>
+                    </div>
+                    <div class="resource crystals">
+                        <span class="resource-icon">💎</span>
+                        <span class="resource-value" id="crystals-value">0</span>
+                    </div>
+                </div>
+                
+                <div class="level-panel">
+                    <div class="level-info">
+                        <span class="level-label">Level</span>
+                        <span class="level-value" id="level-value">1</span>
+                    </div>
+                    <div class="xp-bar">
+                        <div class="xp-fill" id="xp-fill"></div>
+                        <span class="xp-text" id="xp-text">0 / 100 XP</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="side-panel">
+                <div class="panel-tabs">
+                    <button class="tab-btn active" data-tab="upgrades">Upgrades</button>
+                    <button class="tab-btn" data-tab="skills">Skills</button>
+                    <button class="tab-btn" data-tab="stats">Stats</button>
+                </div>
+                
+                <div class="panel-content">
+                    <div class="tab-content active" id="upgrades-tab">
+                        <h3>🚀 Generators</h3>
+                        <div class="upgrades-list">
+                            <div class="upgrade-item">
+                                <div class="upgrade-icon">☀️</div>
+                                <div class="upgrade-info">
+                                    <div class="upgrade-name">Solar Panel</div>
+                                    <div class="upgrade-description">Generates energy from starlight</div>
+                                </div>
+                                <div class="upgrade-cost">10 Energy</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="skills-tab">
+                        <h3>🌟 Skills</h3>
+                        <p>Skills coming soon...</p>
+                    </div>
+                    
+                    <div class="tab-content" id="stats-tab">
+                        <h3>📊 Stats</h3>
+                        <p>Statistics coming soon...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bottom-bar">
+                <button class="action-btn" id="prestige-btn">
+                    <span class="btn-icon">🌌</span>
+                    <span class="btn-text">Prestige</span>
+                </button>
+                
+                <button class="action-btn" id="boost-btn">
+                    <span class="btn-icon">🚀</span>
+                    <span class="btn-text">Boost</span>
+                </button>
+                
+                <button class="action-btn" id="settings-btn">
+                    <span class="btn-icon">⚙️</span>
+                    <span class="btn-text">Settings</span>
+                </button>
+            </div>
+            
+            <div id="floating-texts" class="floating-texts"></div>
+            <div id="notifications" class="notifications"></div>
+        </div>
+    </div>
+    
+    <script>
+        // DEBUG SYSTEM
+        const debugLog = document.getElementById('debug-log');
+        const loadingProgress = document.getElementById('loading-progress');
+        const loadingText = document.getElementById('loading-text');
+        const loadingScreen = document.getElementById('loading-screen');
+        const gameContainer = document.getElementById('game-container');
+        
+        let debugStep = 0;
+        let loadingPercent = 0;
+        
+        function addDebug(message, type = 'info') {
+            debugStep++;
+            const entry = document.createElement('div');
+            entry.className = `debug-entry debug-${type}`;
+            entry.textContent = `${debugStep}: ${message}`;
+            debugLog.appendChild(entry);
+            debugLog.scrollTop = debugLog.scrollHeight;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            console.log(`[${timestamp}] ${message}`);
+        }
+        
+        function updateProgress(percent, message) {
+            loadingPercent = percent;
+            loadingProgress.style.width = percent + '%';
+            loadingText.textContent = message;
+            addDebug(`Progress: ${percent}% - ${message}`);
+        }
+        
+        function showGame() {
+            loadingScreen.style.display = 'none';
+            gameContainer.style.display = 'block';
+            addDebug('Game UI displayed', 'success');
+        }
+        
+        // COMPREHENSIVE TESTING
+        addDebug('Starting comprehensive debug session');
+        updateProgress(5, 'Initializing debug system...');
+        
+        // Test 1: Basic HTML/CSS
+        setTimeout(() => {
+            addDebug('HTML/CSS loaded successfully');
+            updateProgress(10, 'Testing Three.js loading...');
+            
+            // Test 2: Three.js
+            const threeScript = document.createElement('script');
+            threeScript.src = 'https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js';
+            threeScript.onload = () => {
+                addDebug('Three.js loaded successfully');
+                updateProgress(20, 'Testing WebGL capabilities...');
+                
+                setTimeout(() => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                        
+                        if (gl) {
+                            addDebug('WebGL supported');
+                            const scene = new THREE.Scene();
+                            const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+                            const renderer = new THREE.WebGLRenderer({ canvas: canvas });
+                            addDebug('Three.js WebGL test passed');
+                            updateProgress(30, 'Loading asset system...');
+                            loadAssetSystem();
+                        } else {
+                            addDebug('WebGL not supported', 'error');
+                            updateProgress(100, 'WebGL not supported');
+                        }
+                    } catch (error) {
+                        addDebug(`WebGL test failed: ${error.message}`, 'error');
+                        updateProgress(100, 'WebGL error');
+                    }
+                }, 200);
+            };
+            threeScript.onerror = () => {
+                addDebug('Three.js failed to load', 'error');
+                updateProgress(100, 'Three.js loading failed');
+            };
+            document.head.appendChild(threeScript);
+        }, 300);
+        
+        // Test 3: Asset System
+        function loadAssetSystem() {
+            const assetFiles = [
+                'src/assets/sounds/AudioSystem.js',
+                'src/assets/textures/TextureManager.js',
+                'src/assets/models/ModelGenerator.js',
+                'src/assets/AssetLoader.js',
+                'src/assets/PerformanceOptimizer.js',
+                'src/assets/AssetIntegration.js'
+            ];
+            
+            let loadedAssets = 0;
+            let failedAssets = 0;
+            
+            addDebug(`Loading ${assetFiles.length} asset files...`);
+            
+            assetFiles.forEach(file => {
+                const script = document.createElement('script');
+                script.src = file;
+                script.onload = () => {
+                    loadedAssets++;
+                    addDebug(`✓ Loaded ${file}`);
+                    updateProgress(30 + (loadedAssets * 10), `Asset loading... ${loadedAssets}/${assetFiles.length}`);
+                    
+                    if (loadedAssets + failedAssets === assetFiles.length) {
+                        if (failedAssets === 0) {
+                            addDebug('All asset files loaded successfully');
+                            loadGameCore();
+                        } else {
+                            addDebug(`${failedAssets} asset files failed to load`, 'warning');
+                            loadGameCore(); // Try to continue anyway
+                        }
+                    }
+                };
+                script.onerror = () => {
+                    failedAssets++;
+                    addDebug(`✗ Failed to load ${file}`, 'error');
+                    
+                    if (loadedAssets + failedAssets === assetFiles.length) {
+                        if (failedAssets === assetFiles.length) {
+                            addDebug('All asset files failed to load', 'error');
+                            updateProgress(100, 'Asset system loading failed');
+                        } else {
+                            addDebug(`${failedAssets} asset files failed, continuing...`, 'warning');
+                            loadGameCore();
+                        }
+                    }
+                };
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Test 4: Game Core
+        function loadGameCore() {
+            updateProgress(70, 'Loading game core...');
+            
+            const coreFiles = [
+                'src/core/GameConfig.js',
+                'src/core/EventSystem.js',
+                'src/core/SaveManager.js',
+                'src/game/GameState.js',
+                'src/game/UpgradeManager.js',
+                'src/game/AchievementManager.js',
+                'src/game/ClickManager.js',
+                'src/ui/UIManager.js',
+                'src/ui/NotificationManager.js',
+                'src/ui/FloatingTextManager.js',
+                'src/utils/MathUtils.js',
+                'src/utils/FormatUtils.js',
+                'src/core/SceneManager.js',
+                'src/core/Game.js'
+            ];
+            
+            let loadedCore = 0;
+            let failedCore = 0;
+            
+            addDebug(`Loading ${coreFiles.length} core files...`);
+            
+            coreFiles.forEach(file => {
+                const script = document.createElement('script');
+                script.src = file;
+                script.onload = () => {
+                    loadedCore++;
+                    addDebug(`✓ Loaded ${file}`);
+                    updateProgress(70 + (loadedCore * 2), `Core loading... ${loadedCore}/${coreFiles.length}`);
+                    
+                    if (loadedCore + failedCore === coreFiles.length) {
+                        if (failedCore === 0) {
+                            addDebug('All core files loaded successfully');
+                            testGameCreation();
+                        } else {
+                            addDebug(`${failedCore} core files failed to load`, 'warning');
+                            testGameCreation(); // Try anyway
+                        }
+                    }
+                };
+                script.onerror = () => {
+                    failedCore++;
+                    addDebug(`✗ Failed to load ${file}`, 'error');
+                    
+                    if (loadedCore + failedCore === coreFiles.length) {
+                        if (failedCore === coreFiles.length) {
+                            addDebug('All core files failed to load', 'error');
+                            updateProgress(100, 'Core system loading failed');
+                        } else {
+                            addDebug(`${failedCore} core files failed, continuing...`, 'warning');
+                            testGameCreation();
+                        }
+                    }
+                };
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Test 5: Game Creation
+        function testGameCreation() {
+            updateProgress(90, 'Testing game creation...');
+            
+            setTimeout(() => {
+                try {
+                    addDebug('Creating AssetIntegration...');
+                    const assetIntegration = new AssetIntegration();
+                    addDebug('AssetIntegration created successfully');
+                    
+                    addDebug('Creating CosmicClicker game...');
+                    const game = new CosmicClicker();
+                    addDebug('CosmicClicker game created successfully');
+                    
+                    addDebug('Testing game components...');
+                    if (game.eventSystem) addDebug('✓ EventSystem available');
+                    if (game.gameState) addDebug('✓ GameState available');
+                    if (game.sceneManager) addDebug('✓ SceneManager available');
+                    if (game.saveManager) addDebug('✓ SaveManager available');
+                    
+                    updateProgress(95, 'Initializing game...');
+                    
+                    // Try to initialize the game
+                    game.init().then(() => {
+                        addDebug('Game initialized successfully');
+                        updateProgress(100, '🎉 GAME READY!');
+                        
+                        setTimeout(() => {
+                            showGame();
+                        }, 1000);
+                    }).catch((error) => {
+                        addDebug(`Game initialization failed: ${error.message}`, 'error');
+                        updateProgress(100, 'Game initialization failed');
+                        
+                        // Show game anyway for debugging
+                        setTimeout(() => {
+                            showGame();
+                        }, 2000);
+                    });
+                    
+                } catch (error) {
+                    addDebug(`Game creation failed: ${error.message}`, 'error');
+                    addDebug(`Error stack: ${error.stack}`, 'error');
+                    updateProgress(100, 'Game creation failed');
+                    
+                    // Show game anyway for debugging
+                    setTimeout(() => {
+                        showGame();
+                    }, 2000);
+                }
+            }, 500);
+        }
+        
+        // Global error handlers
+        window.addEventListener('error', (e) => {
+            addDebug(`Global error: ${e.message} at ${e.filename}:${e.lineno}`, 'error');
+        });
+        
+        window.addEventListener('unhandledrejection', (e) => {
+            addDebug(`Unhandled promise rejection: ${e.reason}`, 'error');
+        });
+        
+        // Tab functionality
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('tab-btn')) {
+                const tabs = document.querySelectorAll('.tab-btn');
+                const contents = document.querySelectorAll('.tab-content');
+                
+                tabs.forEach(tab => tab.classList.remove('active'));
+                contents.forEach(content => content.classList.remove('active'));
+                
+                e.target.classList.add('active');
+                const targetTab = e.target.dataset.tab;
+                if (targetTab) {
+                    const targetContent = document.getElementById(targetTab + '-tab');
+                    if (targetContent) {
+                        targetContent.classList.add('active');
+                    }
+                }
+            }
+        });
+        
+        addDebug('Debug system initialized');
+    </script>
+</body>
+</html>
