@@ -13,6 +13,15 @@ window.SceneManager = class SceneManager {
         this.particles = [];
         this.backgroundStars = [];
         
+        // Performance optimizations
+        this.particlePool = [];
+        this.maxParticles = 100;
+        this.frameCount = 0;
+        this.targetFPS = 60;
+        this.frameTime = 1000 / this.targetFPS;
+        this.lastFrameTime = 0;
+        this.updatePerformanceSettings();
+        
         // Animation
         this.clock = new THREE.Clock();
         this.orbRotation = 0;
@@ -63,6 +72,9 @@ window.SceneManager = class SceneManager {
         
         // Setup events
         this.setupEvents();
+        
+        // Initialize particle pool
+        this.initParticlePool();
         
         // Start render loop
         this.animate();
@@ -135,14 +147,15 @@ window.SceneManager = class SceneManager {
     }
     
     createBackground() {
-        // Create MASSIVE starfield with nebulas
+        // Create optimized starfield
         const starsGeometry = new THREE.BufferGeometry();
         const starPositions = [];
         const starColors = [];
         const starSizes = [];
         
-        // Create 10000 stars for EPIC background
-        for (let i = 0; i < 10000; i++) {
+        // Create dynamic star count based on graphics settings
+        const starCount = GameConfig.GRAPHICS_PRESETS[this.graphicsQuality].starCount;
+        for (let i = 0; i < starCount; i++) {
             const x = (Math.random() - 0.5) * 300;
             const y = (Math.random() - 0.5) * 300;
             const z = -Math.random() * 200 - 50;
@@ -195,6 +208,39 @@ window.SceneManager = class SceneManager {
         this.scene.add(pointLight2);
     }
     
+    initParticlePool() {
+        // Pre-create particles for better performance
+        for (let i = 0; i < this.maxParticles; i++) {
+            const geometry = new THREE.SphereGeometry(0.2, 8, 8);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x00ff88,
+                transparent: true,
+                opacity: 0
+            });
+            
+            const particle = new THREE.Mesh(geometry, material);
+            particle.visible = false;
+            particle.inUse = false;
+            this.scene.add(particle);
+            this.particlePool.push(particle);
+        }
+    }
+    
+    getParticleFromPool() {
+        for (let i = 0; i < this.particlePool.length; i++) {
+            if (!this.particlePool[i].inUse) {
+                return this.particlePool[i];
+            }
+        }
+        return null;
+    }
+    
+    returnParticleToPool(particle) {
+        particle.inUse = false;
+        particle.visible = false;
+        particle.material.opacity = 0;
+    }
+    
     setupEvents() {
         // Window resize
         window.addEventListener('resize', () => {
@@ -241,17 +287,17 @@ window.SceneManager = class SceneManager {
     }
     
     spawnParticles(data) {
-        const particleCount = Math.min(data.count || 10, 50);
+        const particleCount = Math.min(data.count || 10, 20); // Reduced max particles
         
         for (let i = 0; i < particleCount; i++) {
-            const geometry = new THREE.SphereGeometry(0.2, 8, 8);
-            const material = new THREE.MeshBasicMaterial({
-                color: data.color || 0x00ff88,
-                transparent: true,
-                opacity: 1
-            });
+            const particle = this.getParticleFromPool();
+            if (!particle) break; // Pool exhausted
             
-            const particle = new THREE.Mesh(geometry, material);
+            // Activate particle
+            particle.inUse = true;
+            particle.visible = true;
+            particle.material.color.setHex(data.color || 0x00ff88);
+            particle.material.opacity = 1;
             
             // Random position around orb
             const angle = Math.random() * Math.PI * 2;
@@ -268,7 +314,6 @@ window.SceneManager = class SceneManager {
             );
             
             particle.lifetime = 1;
-            this.scene.add(particle);
             this.particles.push(particle);
         }
     }
@@ -277,6 +322,8 @@ window.SceneManager = class SceneManager {
         for (let i = this.particles.length - 1; i >= 0; i--) {
             const particle = this.particles[i];
             
+            if (!particle.inUse) continue;
+            
             // Update position
             particle.position.add(particle.velocity.clone().multiplyScalar(deltaTime));
             
@@ -284,31 +331,52 @@ window.SceneManager = class SceneManager {
             particle.lifetime -= deltaTime;
             particle.material.opacity = particle.lifetime;
             
-            // Remove dead particles
+            // Return to pool when dead
             if (particle.lifetime <= 0) {
-                this.scene.remove(particle);
-                particle.geometry.dispose();
-                particle.material.dispose();
+                this.returnParticleToPool(particle);
                 this.particles.splice(i, 1);
             }
         }
+    }
+    
+    updatePerformanceSettings() {
+        const preset = GameConfig.GRAPHICS_PRESETS[this.graphicsQuality];
+        
+        // Update FPS settings
+        this.targetFPS = preset.targetFPS;
+        this.frameTime = 1000 / this.targetFPS;
+        
+        // Update particle settings
+        this.maxParticles = preset.particleCount;
     }
     
     updateGraphicsQuality(quality) {
         this.graphicsQuality = quality;
         const preset = GameConfig.GRAPHICS_PRESETS[quality];
         
-        // Update renderer settings
-        this.renderer.setPixelRatio(preset.antialias ? window.devicePixelRatio : 1);
+        // Update performance settings
+        this.updatePerformanceSettings();
         
-        // Update shadows
-        this.renderer.shadowMap.enabled = preset.shadowQuality > 0;
+        // Update renderer settings
+        if (this.renderer) {
+            this.renderer.setPixelRatio(preset.antialias ? window.devicePixelRatio : 1);
+            
+            // Update shadows
+            this.renderer.shadowMap.enabled = preset.shadowQuality > 0;
+        }
         
         // Would update post-processing here if implemented
     }
     
     animate() {
         requestAnimationFrame(() => this.animate());
+        
+        const now = performance.now();
+        
+        // FPS limiting for better performance
+        if (now - this.lastFrameTime < this.frameTime) {
+            return;
+        }
         
         const deltaTime = this.clock.getDelta();
         const elapsedTime = this.clock.getElapsedTime();
@@ -325,24 +393,35 @@ window.SceneManager = class SceneManager {
         // Floating animation
         this.cosmicOrb.position.y = Math.sin(elapsedTime * 0.5) * 0.5;
         
-        // Update particles
-        this.updateParticles(deltaTime);
+        // Update particles (only if there are any)
+        if (this.particles.length > 0) {
+            this.updateParticles(deltaTime);
+        }
         
-        // Rotate star background slowly
-        this.backgroundStars.forEach(stars => {
-            stars.rotation.y += deltaTime * 0.01;
-        });
+        // Rotate star background slowly (throttled)
+        this.frameCount++;
+        if (this.frameCount % 3 === 0) { // Update every 3rd frame
+            this.backgroundStars.forEach(stars => {
+                stars.rotation.y += deltaTime * 0.01;
+            });
+        }
         
-        // Camera follow mouse slightly
-        this.camera.position.x += (this.mouse.x * 5 - this.camera.position.x) * 0.05;
-        this.camera.position.y += (this.mouse.y * 5 - this.camera.position.y) * 0.05;
-        this.camera.lookAt(this.scene.position);
+        // Camera follow mouse slightly (throttled)
+        if (this.frameCount % 2 === 0) { // Update every 2nd frame
+            this.camera.position.x += (this.mouse.x * 5 - this.camera.position.x) * 0.05;
+            this.camera.position.y += (this.mouse.y * 5 - this.camera.position.y) * 0.05;
+            this.camera.lookAt(this.scene.position);
+        }
         
         // Render
         this.renderer.render(this.scene, this.camera);
         
-        // Emit update event
-        this.eventSystem.emit(GameEvents.SCENE_UPDATE, { deltaTime, elapsedTime });
+        // Emit update event (throttled)
+        if (this.frameCount % 5 === 0) { // Update every 5th frame
+            this.eventSystem.emit(GameEvents.SCENE_UPDATE, { deltaTime, elapsedTime });
+        }
+        
+        this.lastFrameTime = now;
     }
     
     // Check if click hits the orb

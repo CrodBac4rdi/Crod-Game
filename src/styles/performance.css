@@ -1,0 +1,478 @@
+/* Performance Optimization Styles */
+
+/* Critical CSS Variables for Performance */
+:root {
+    /* Precomputed values for common calculations */
+    --golden-ratio: 1.618;
+    --viewport-width: 100vw;
+    --viewport-height: 100vh;
+    --half-viewport: 50vw;
+    --quarter-viewport: 25vw;
+    
+    /* Optimized timing functions for 60fps */
+    --easing-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+    --easing-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+    --easing-in-out-back: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    
+    /* Performance-optimized shadows */
+    --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    --shadow-text: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-float: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
+    
+    /* Optimized gradients */
+    --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+    --gradient-accent: linear-gradient(135deg, var(--color-accent) 0%, var(--color-primary) 100%);
+    --gradient-success: linear-gradient(135deg, var(--color-success) 0%, var(--color-primary) 100%);
+}
+
+/* GPU Acceleration Utilities */
+.gpu-layer {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+.gpu-animate {
+    will-change: transform;
+    animation-fill-mode: both;
+}
+
+.gpu-animate-complete {
+    will-change: auto;
+}
+
+/* CSS Containment for Performance */
+.contain-layout {
+    contain: layout;
+}
+
+.contain-style {
+    contain: style;
+}
+
+.contain-paint {
+    contain: paint;
+}
+
+.contain-size {
+    contain: size;
+}
+
+.contain-strict {
+    contain: strict;
+}
+
+/* Optimized Flexbox Utilities */
+.flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+.flex-nowrap {
+    flex-wrap: nowrap;
+}
+
+.flex-grow {
+    flex-grow: 1;
+}
+
+.flex-shrink-0 {
+    flex-shrink: 0;
+}
+
+/* Optimized Grid Utilities */
+.grid-auto {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+}
+
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-md);
+}
+
+/* Performance-Optimized Animations */
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(20px) translateZ(0);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) translateZ(0);
+    }
+}
+
+@keyframes fadeInDown {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px) translateZ(0);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) translateZ(0);
+    }
+}
+
+@keyframes fadeInLeft {
+    0% {
+        opacity: 0;
+        transform: translateX(-20px) translateZ(0);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0) translateZ(0);
+    }
+}
+
+@keyframes fadeInRight {
+    0% {
+        opacity: 0;
+        transform: translateX(20px) translateZ(0);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0) translateZ(0);
+    }
+}
+
+@keyframes scaleIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.5) translateZ(0);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateZ(0);
+    }
+}
+
+@keyframes slideUp {
+    0% {
+        transform: translateY(100%) translateZ(0);
+    }
+    100% {
+        transform: translateY(0) translateZ(0);
+    }
+}
+
+@keyframes slideDown {
+    0% {
+        transform: translateY(-100%) translateZ(0);
+    }
+    100% {
+        transform: translateY(0) translateZ(0);
+    }
+}
+
+/* Animation Utility Classes */
+.animate-fade-in-up {
+    animation: fadeInUp 0.5s var(--easing-out-quart) both;
+}
+
+.animate-fade-in-down {
+    animation: fadeInDown 0.5s var(--easing-out-quart) both;
+}
+
+.animate-fade-in-left {
+    animation: fadeInLeft 0.5s var(--easing-out-quart) both;
+}
+
+.animate-fade-in-right {
+    animation: fadeInRight 0.5s var(--easing-out-quart) both;
+}
+
+.animate-scale-in {
+    animation: scaleIn 0.3s var(--easing-out-quart) both;
+}
+
+.animate-slide-up {
+    animation: slideUp 0.4s var(--easing-out-quart) both;
+}
+
+.animate-slide-down {
+    animation: slideDown 0.4s var(--easing-out-quart) both;
+}
+
+/* Staggered Animation Delays */
+.animate-delay-1 { animation-delay: 0.1s; }
+.animate-delay-2 { animation-delay: 0.2s; }
+.animate-delay-3 { animation-delay: 0.3s; }
+.animate-delay-4 { animation-delay: 0.4s; }
+.animate-delay-5 { animation-delay: 0.5s; }
+
+/* Optimized Hover Effects */
+.hover-lift {
+    transition: transform var(--transition-fast);
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px) translateZ(0);
+}
+
+.hover-scale {
+    transition: transform var(--transition-fast);
+}
+
+.hover-scale:hover {
+    transform: scale(1.05) translateZ(0);
+}
+
+.hover-glow {
+    transition: box-shadow var(--transition-fast);
+}
+
+.hover-glow:hover {
+    box-shadow: var(--shadow-glow);
+}
+
+.hover-shine {
+    position: relative;
+    overflow: hidden;
+}
+
+.hover-shine::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left var(--transition-normal);
+}
+
+.hover-shine:hover::before {
+    left: 100%;
+}
+
+/* Performance Optimized Scrollbars */
+.scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) var(--bg-secondary);
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: var(--text-dim);
+}
+
+/* Optimized Typography */
+.text-performance {
+    font-feature-settings: "liga" 1, "calt" 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.text-crisp {
+    text-rendering: optimizeSpeed;
+    -webkit-font-smoothing: subpixel-antialiased;
+}
+
+/* Memory Efficient Patterns */
+.pattern-dots {
+    background-image: radial-gradient(circle at 1px 1px, var(--border-color) 1px, transparent 0);
+    background-size: 20px 20px;
+}
+
+.pattern-grid {
+    background-image: 
+        linear-gradient(var(--border-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* Efficient Loading States */
+.loading-skeleton {
+    background: var(--bg-tertiary);
+    background-image: linear-gradient(
+        90deg,
+        var(--bg-tertiary) 0%,
+        var(--bg-secondary) 20%,
+        var(--bg-tertiary) 40%,
+        var(--bg-tertiary) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s linear infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* Efficient Visibility Classes */
+.visible {
+    visibility: visible;
+    opacity: 1;
+}
+
+.invisible {
+    visibility: hidden;
+    opacity: 0;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Performance Monitor Classes */
+.perf-monitor {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.perf-fps {
+    color: #00ff00;
+}
+
+.perf-memory {
+    color: #ffff00;
+}
+
+.perf-warning {
+    color: #ff0000;
+}
+
+/* Optimized Media Queries */
+@media (max-width: 768px) {
+    .hide-mobile {
+        display: none;
+    }
+    
+    .show-mobile {
+        display: block;
+    }
+}
+
+@media (min-width: 769px) {
+    .hide-desktop {
+        display: none;
+    }
+    
+    .show-desktop {
+        display: block;
+    }
+}
+
+/* Touch Optimizations */
+@media (hover: none) {
+    .hover-lift:hover,
+    .hover-scale:hover,
+    .hover-glow:hover,
+    .hover-shine:hover {
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .hover-lift:active,
+    .hover-scale:active {
+        transform: scale(0.98) translateZ(0);
+    }
+}
+
+/* Reduced Motion Optimizations */
+@media (prefers-reduced-motion: reduce) {
+    .gpu-animate,
+    .animate-fade-in-up,
+    .animate-fade-in-down,
+    .animate-fade-in-left,
+    .animate-fade-in-right,
+    .animate-scale-in,
+    .animate-slide-up,
+    .animate-slide-down {
+        animation: none;
+    }
+    
+    .hover-lift:hover,
+    .hover-scale:hover {
+        transform: none;
+    }
+    
+    .loading-skeleton {
+        animation: none;
+    }
+}
+
+/* High Contrast Optimizations */
+@media (prefers-contrast: high) {
+    .pattern-dots,
+    .pattern-grid {
+        background-image: none;
+    }
+    
+    .loading-skeleton {
+        background: var(--text-primary);
+        background-image: none;
+    }
+}
+
+/* Print Optimizations */
+@media print {
+    .perf-monitor,
+    .gpu-layer,
+    .animate-fade-in-up,
+    .animate-fade-in-down,
+    .animate-fade-in-left,
+    .animate-fade-in-right,
+    .animate-scale-in,
+    .animate-slide-up,
+    .animate-slide-down {
+        display: none !important;
+    }
+}

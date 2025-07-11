@@ -50,32 +50,39 @@ window.ClickManager = class ClickManager {
         // Gain XP for clicking
         this.gameState.addXP(1);
         
-        // Emit events
-        this.eventSystem.emit(GameEvents.CLICK_3D, {
-            x: x,
-            y: y,
-            energy: actualGain,
-            combo: this.clickCombo
-        });
+        // Batch emit events for performance
+        this.eventSystem.emitBatch([
+            {
+                event: GameEvents.CLICK_3D,
+                data: {
+                    x: x,
+                    y: y,
+                    energy: actualGain,
+                    combo: this.clickCombo
+                }
+            },
+            {
+                event: GameEvents.FLOATING_TEXT,
+                data: {
+                    text: `+${window.FormatUtils.formatNumber(actualGain)}`,
+                    color: this.clickCombo > 5 ? '#ffaa00' : '#00ff88',
+                    x: x,
+                    y: y,
+                    size: this.clickCombo > 5 ? 1.5 : 1
+                }
+            },
+            {
+                event: GameEvents.PARTICLE_SPAWN,
+                data: {
+                    x: x,
+                    y: y,
+                    count: Math.min(10 + this.clickCombo, 20), // Reduced particles
+                    color: this.clickCombo > 5 ? 0xffaa00 : 0x00ff88
+                }
+            }
+        ]);
         
-        // Floating text
-        this.eventSystem.emit(GameEvents.FLOATING_TEXT, {
-            text: `+${window.FormatUtils.formatNumber(actualGain)}`,
-            color: this.clickCombo > 5 ? '#ffaa00' : '#00ff88',
-            x: x,
-            y: y,
-            size: this.clickCombo > 5 ? 1.5 : 1
-        });
-        
-        // Particle effect
-        this.eventSystem.emit(GameEvents.PARTICLE_SPAWN, {
-            x: x,
-            y: y,
-            count: Math.min(10 + this.clickCombo, 50),
-            color: this.clickCombo > 5 ? 0xffaa00 : 0x00ff88
-        });
-        
-        // Achievement check
+        // Achievement check (throttled)
         this.gameState.checkAchievements();
         
         return actualGain;

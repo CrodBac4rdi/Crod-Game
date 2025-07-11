@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Audio File Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0a0a0f;
+            color: #fff;
+        }
+        
+        .btn {
+            background: #00d4ff;
+            color: #000;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            background: #00b4df;
+        }
+        
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            background: #1a1a2e;
+            border-radius: 5px;
+        }
+        
+        .progress {
+            background: #333;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-bar {
+            background: #00d4ff;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎵 Cosmic Clicker Audio Generator</h1>
+    <p>Generate optimized audio files for the game</p>
+    
+    <button class="btn" onclick="generateAllSounds()">Generate All Sounds</button>
+    <button class="btn" onclick="testSounds()">Test Sounds</button>
+    <button class="btn" onclick="downloadAll()">Download All</button>
+    
+    <div class="progress">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+    
+    <div class="status" id="status">Ready to generate sounds...</div>
+    
+    <div id="downloadLinks"></div>
+    
+    <script src="generateSounds.js"></script>
+    <script>
+        let generator = null;
+        let generatedSounds = new Map();
+        
+        async function initGenerator() {
+            if (!generator) {
+                generator = new SoundGenerator();
+                await new Promise(resolve => {
+                    if (generator.audioContext.state === 'suspended') {
+                        generator.audioContext.resume().then(resolve);
+                    } else {
+                        resolve();
+                    }
+                });
+            }
+        }
+        
+        async function generateAllSounds() {
+            await initGenerator();
+            
+            const soundTypes = [
+                'click', 'upgrade', 'achievement', 'prestige', 
+                'boost', 'ambient', 'notification', 'whoosh'
+            ];
+            
+            const statusDiv = document.getElementById('status');
+            const progressBar = document.getElementById('progressBar');
+            const downloadLinks = document.getElementById('downloadLinks');
+            
+            statusDiv.innerHTML = 'Generating sounds...';
+            downloadLinks.innerHTML = '';
+            
+            for (let i = 0; i < soundTypes.length; i++) {
+                const soundType = soundTypes[i];
+                const progress = ((i + 1) / soundTypes.length) * 100;
+                
+                progressBar.style.width = progress + '%';
+                statusDiv.innerHTML = `Generating ${soundType} sound... (${i + 1}/${soundTypes.length})`;
+                
+                try {
+                    const methodName = `generate${soundType.charAt(0).toUpperCase() + soundType.slice(1)}Sound`;
+                    const buffer = generator[methodName]();
+                    const wavData = generator.bufferToWav(buffer);
+                    
+                    generatedSounds.set(soundType, wavData);
+                    
+                    // Create download link
+                    const blob = new Blob([wavData], { type: 'audio/wav' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `${soundType}.wav`;
+                    link.textContent = `Download ${soundType}.wav`;
+                    link.className = 'btn';
+                    link.style.display = 'block';
+                    link.style.marginBottom = '10px';
+                    downloadLinks.appendChild(link);
+                    
+                    // Small delay for UI responsiveness
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                } catch (error) {
+                    console.error(`Error generating ${soundType}:`, error);
+                    statusDiv.innerHTML = `Error generating ${soundType}: ${error.message}`;
+                }
+            }
+            
+            statusDiv.innerHTML = 'All sounds generated! Click links to download.';
+        }
+        
+        async function testSounds() {
+            await initGenerator();
+            
+            const soundTypes = ['click', 'upgrade', 'achievement'];
+            const statusDiv = document.getElementById('status');
+            
+            statusDiv.innerHTML = 'Testing sounds...';
+            
+            for (const soundType of soundTypes) {
+                const methodName = `generate${soundType.charAt(0).toUpperCase() + soundType.slice(1)}Sound`;
+                const buffer = generator[methodName]();
+                
+                // Play the sound
+                const source = generator.audioContext.createBufferSource();
+                source.buffer = buffer;
+                source.connect(generator.audioContext.destination);
+                source.start(0);
+                
+                statusDiv.innerHTML = `Playing ${soundType} sound...`;
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            statusDiv.innerHTML = 'Sound test complete!';
+        }
+        
+        function downloadAll() {
+            if (generatedSounds.size === 0) {
+                alert('Please generate sounds first!');
+                return;
+            }
+            
+            generatedSounds.forEach((wavData, soundType) => {
+                const blob = new Blob([wavData], { type: 'audio/wav' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${soundType}.wav`;
+                link.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+        
+        // Auto-initialize on first user interaction
+        document.addEventListener('click', initGenerator, { once: true });
+    </script>
+</body>
+</html>

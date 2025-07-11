@@ -1,4 +1,4 @@
-// UI Manager
+// Optimized UI Manager
 window.UIManager = class UIManager {
     constructor(gameState, eventSystem, upgradeManager, achievementManager) {
         this.gameState = gameState;
@@ -8,6 +8,18 @@ window.UIManager = class UIManager {
         
         this.currentTab = 'upgrades';
         this.updateInterval = null;
+        
+        // Performance optimizations
+        this.lastUpdateTime = 0;
+        this.updateThrottle = 16; // ~60fps
+        this.elementsCache = new Map();
+        this.domPool = new Map();
+        this.pendingUpdates = new Set();
+        this.isVisible = true;
+        this.rafId = null;
+        
+        // Element pools for recycling
+        this.initElementPools();
         
         this.init();
     }
@@ -45,53 +57,61 @@ window.UIManager = class UIManager {
     }
     
     setupEventListeners() {
-        // Resource updates
-        this.eventSystem.on(GameEvents.ENERGY_CHANGED, () => this.updateResources());
-        this.eventSystem.on(GameEvents.CRYSTALS_CHANGED, () => this.updateResources());
+        // Optimized event listeners - schedule updates instead of immediate execution
+        this.eventSystem.on(GameEvents.ENERGY_CHANGED, () => this.scheduleUpdate('resources'));
+        this.eventSystem.on(GameEvents.CRYSTALS_CHANGED, () => this.scheduleUpdate('resources'));
         
         // Progression updates
-        this.eventSystem.on(GameEvents.XP_GAINED, () => this.updateLevel());
+        this.eventSystem.on(GameEvents.XP_GAINED, () => this.scheduleUpdate('level'));
         this.eventSystem.on(GameEvents.LEVEL_UP, (data) => {
-            this.updateLevel();
-            this.updatePrestigeButton();
+            this.scheduleUpdate('level');
+            this.scheduleUpdate('prestige');
         });
         
         // Upgrade updates
         this.eventSystem.on(GameEvents.GENERATOR_PURCHASED, () => {
-            this.updateUpgrades();
-            this.updateResources();
+            this.scheduleUpdate('upgrades');
+            this.scheduleUpdate('resources');
         });
         
         this.eventSystem.on(GameEvents.CLICK_UPGRADE_PURCHASED, () => {
-            this.updateUpgrades();
+            this.scheduleUpdate('upgrades');
         });
         
         // Achievement updates
         this.eventSystem.on(GameEvents.ACHIEVEMENT_UNLOCKED, () => {
-            this.updateAchievements();
+            this.scheduleUpdate('achievements');
         });
         
         // Boost updates
         this.eventSystem.on(GameEvents.BOOST_ACTIVATED, () => {
-            this.updateBoostButton();
+            this.scheduleUpdate('boost');
         });
         
         this.eventSystem.on(GameEvents.BOOST_EXPIRED, () => {
-            this.updateBoostButton();
+            this.scheduleUpdate('boost');
         });
     }
     
     startUpdateLoop() {
-        // Update UI every frame
-        this.updateInterval = setInterval(() => {
-            this.updateResources();
-            this.updateUpgrades();
-            this.updateStats();
-            
-            if (this.gameState.boostActive) {
-                this.updateBoostButton();
+        // Optimized update loop using RAF and throttling
+        const update = (timestamp) => {
+            if (timestamp - this.lastUpdateTime >= this.updateThrottle && this.isVisible) {
+                this.processPendingUpdates();
+                this.lastUpdateTime = timestamp;
             }
-        }, 100);
+            this.rafId = requestAnimationFrame(update);
+        };
+        this.rafId = requestAnimationFrame(update);
+        
+        // Handle visibility changes
+        document.addEventListener('visibilitychange', () => {
+            this.isVisible = !document.hidden;
+            if (this.isVisible) {
+                this.scheduleUpdate('resources');
+                this.scheduleUpdate('upgrades');
+            }
+        });
     }
     
     switchTab(tab) {
@@ -127,12 +147,35 @@ window.UIManager = class UIManager {
     }
     
     updateResources() {
-        // Update energy
-        document.getElementById('energy-value').textContent = FormatUtils.formatNumber(this.gameState.energy);
-        document.getElementById('energy-rate').textContent = FormatUtils.formatRate(this.gameState.energyPerSecond);
+        // Cached DOM elements for performance
+        if (!this.elementsCache.has('resources')) {
+            this.elementsCache.set('resources', {
+                energyValue: document.getElementById('energy-value'),
+                energyRate: document.getElementById('energy-rate'),
+                crystalsValue: document.getElementById('crystals-value')
+            });
+        }
         
-        // Update crystals
-        document.getElementById('crystals-value').textContent = FormatUtils.formatNumber(this.gameState.crystals);
+        const elements = this.elementsCache.get('resources');
+        
+        // Only update if values changed
+        const energyText = FormatUtils.formatNumber(this.gameState.energy);
+        const rateText = FormatUtils.formatRate(this.gameState.energyPerSecond);
+        const crystalsText = FormatUtils.formatNumber(this.gameState.crystals);
+        
+        if (elements.energyValue.textContent !== energyText) {
+            elements.energyValue.textContent = energyText;
+            this.pulseElement(elements.energyValue.closest('.resource'));
+        }
+        
+        if (elements.energyRate.textContent !== rateText) {
+            elements.energyRate.textContent = rateText;
+        }
+        
+        if (elements.crystalsValue.textContent !== crystalsText) {
+            elements.crystalsValue.textContent = crystalsText;
+            this.pulseElement(elements.crystalsValue.closest('.resource'));
+        }
     }
     
     updateLevel() {
@@ -144,25 +187,94 @@ window.UIManager = class UIManager {
     }
     
     updateUpgrades() {
-        // Update generators
-        const generatorsList = document.getElementById('generators-list');
-        generatorsList.innerHTML = '';
+        // Efficient upgrade updates using virtual DOM and recycling
+        if (!this.elementsCache.has('upgrades')) {
+            this.elementsCache.set('upgrades', {
+                generators: new Map(),
+                clickUpgrades: new Map(),
+                generatorsList: document.getElementById('generators-list'),
+                clickUpgradesList: document.getElementById('click-upgrades-list')
+            });
+        }
         
-        GameConfig.GENERATORS.forEach(gen => {
-            const info = this.upgradeManager.getGeneratorInfo(gen.id);
-            const item = this.createUpgradeItem(info, 'generator');
-            generatorsList.appendChild(item);
+        const cache = this.elementsCache.get('upgrades');
+        
+        // Update generators efficiently
+        this.updateUpgradeList(GameConfig.GENERATORS, cache.generators, 
+            cache.generatorsList, 'generator');
+        
+        // Update click upgrades efficiently  
+        this.updateUpgradeList(GameConfig.CLICK_UPGRADES, cache.clickUpgrades,
+            cache.clickUpgradesList, 'click');
+    }
+    
+    updateUpgradeList(configs, cache, container, type) {
+        const fragment = document.createDocumentFragment();
+        
+        configs.forEach(config => {
+            const info = type === 'generator' ? 
+                this.upgradeManager.getGeneratorInfo(config.id) :
+                this.upgradeManager.getClickUpgradeInfo(config.id);
+            
+            let item = cache.get(config.id);
+            if (!item) {
+                item = this.createUpgradeItem(info, type);
+                cache.set(config.id, item);
+            } else {
+                this.updateUpgradeItem(item, info, type);
+            }
+            
+            fragment.appendChild(item);
         });
         
-        // Update click upgrades
-        const clickUpgradesList = document.getElementById('click-upgrades-list');
-        clickUpgradesList.innerHTML = '';
+        // Batch DOM update
+        container.innerHTML = '';
+        container.appendChild(fragment);
+    }
+    
+    updateUpgradeItem(item, info, type) {
+        // Update existing item efficiently
+        const header = item.querySelector('.upgrade-header');
+        const nameSpan = header.querySelector('.upgrade-name');
+        const levelSpan = header.querySelector('.upgrade-level');
+        const desc = item.querySelector('.upgrade-desc');
+        const cost = item.querySelector('.upgrade-cost');
         
-        GameConfig.CLICK_UPGRADES.forEach(upgrade => {
-            const info = this.upgradeManager.getClickUpgradeInfo(upgrade.id);
-            const item = this.createUpgradeItem(info, 'click');
-            clickUpgradesList.appendChild(item);
-        });
+        // Update classes
+        item.className = 'upgrade-item';
+        if (info.canAfford && !info.isMaxed) item.classList.add('can-afford');
+        if (info.isMaxed) item.classList.add('maxed');
+        
+        // Update content only if changed
+        const newName = `${info.icon} ${info.name}`;
+        if (nameSpan.textContent !== newName) {
+            nameSpan.textContent = newName;
+        }
+        
+        const newLevel = FormatUtils.formatLevel(info.level, info.maxLevel);
+        if (levelSpan.textContent !== newLevel) {
+            levelSpan.textContent = newLevel;
+        }
+        
+        // Update description
+        let newDesc;
+        if (type === 'generator') {
+            newDesc = info.level > 0 ? 
+                `Producing ${FormatUtils.formatRate(info.currentProduction)}` :
+                `Will produce ${FormatUtils.formatRate(info.nextProduction)}`;
+        } else {
+            newDesc = `Click power x${FormatUtils.formatMultiplier(info.nextMultiplier)}`;
+        }
+        
+        if (desc.textContent !== newDesc) {
+            desc.textContent = newDesc;
+        }
+        
+        // Update cost
+        const newCost = info.isMaxed ? 'MAX LEVEL' : `Cost: ${FormatUtils.formatNumber(info.cost)} ⚡`;
+        if (cost.textContent !== newCost) {
+            cost.innerHTML = newCost;
+        }
     }
     
     createUpgradeItem(info, type) {
@@ -338,8 +450,84 @@ window.UIManager = class UIManager {
     }
     
     destroy() {
+        // Improved cleanup
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
+        }
+        
+        if (this.rafId) {
+            cancelAnimationFrame(this.rafId);
+        }
+        
+        // Clear caches
+        this.elementsCache.clear();
+        this.domPool.clear();
+        this.pendingUpdates.clear();
+        
+        // Remove event listeners
+        document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    }
+    
+    // New performance helper methods
+    initElementPools() {
+        // Pre-create element pools for common elements
+        this.domPool.set('upgrade-item', []);
+        this.domPool.set('notification', []);
+        this.domPool.set('floating-text', []);
+    }
+    
+    scheduleUpdate(type) {
+        this.pendingUpdates.add(type);
+    }
+    
+    processPendingUpdates() {
+        if (this.pendingUpdates.has('resources')) {
+            this.updateResources();
+        }
+        if (this.pendingUpdates.has('upgrades')) {
+            this.updateUpgrades();
+        }
+        if (this.pendingUpdates.has('level')) {
+            this.updateLevel();
+        }
+        if (this.pendingUpdates.has('stats')) {
+            this.updateStats();
+        }
+        if (this.pendingUpdates.has('achievements')) {
+            this.updateAchievements();
+        }
+        if (this.pendingUpdates.has('boost')) {
+            this.updateBoostButton();
+        }
+        
+        this.pendingUpdates.clear();
+    }
+    
+    pulseElement(element) {
+        if (element && !element.classList.contains('pulse')) {
+            element.classList.add('pulse');
+            setTimeout(() => element.classList.remove('pulse'), 300);
+        }
+    }
+    
+    // Enhanced virtual scrolling for large lists
+    setupVirtualScrolling(container, itemHeight = 60) {
+        const viewport = container.parentElement;
+        const scrollTop = viewport.scrollTop;
+        const viewportHeight = viewport.clientHeight;
+        
+        const startIndex = Math.floor(scrollTop / itemHeight);
+        const endIndex = Math.min(startIndex + Math.ceil(viewportHeight / itemHeight) + 1, 
+            container.children.length);
+        
+        // Hide/show elements based on visibility
+        for (let i = 0; i < container.children.length; i++) {
+            const child = container.children[i];
+            if (i < startIndex || i > endIndex) {
+                child.style.display = 'none';
+            } else {
+                child.style.display = '';
+            }
         }
     }
 };

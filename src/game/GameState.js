@@ -44,6 +44,12 @@ window.GameState = class GameState {
             this.achievements[achievement.id] = false;
         });
         
+        // Performance optimizations
+        this.achievementCheckCooldown = 0;
+        this.achievementCheckInterval = 100; // Only check every 100ms
+        this.pendingAchievementChecks = new Set();
+        this.achievementCache = new Map();
+        
         // Stats
         this.stats = {
             totalClicks: 0,
@@ -69,6 +75,10 @@ window.GameState = class GameState {
         // Per second calculations
         this.energyPerSecond = 0;
         this.updateProduction();
+        
+        // UI update throttling
+        this.lastUIUpdate = 0;
+        this.uiUpdateInterval = 50; // Update UI every 50ms
     }
     
     // Add energy
@@ -180,6 +190,9 @@ window.GameState = class GameState {
                 this.energyPerSecond += genData.production;
             }
         });
+        
+        // Schedule generator master check
+        this.pendingAchievementChecks.add('generator_master');
     }
     
     // Update click power
@@ -201,7 +214,7 @@ window.GameState = class GameState {
         // Add energy from generators
         if (this.energyPerSecond > 0) {
             const energyGain = this.energyPerSecond * deltaTime;
-            this.addEnergy(energyGain);
+            this.addEnergyBatch(energyGain);
         }
         
         // Update play time
@@ -211,6 +224,28 @@ window.GameState = class GameState {
         if (this.boostActive && Date.now() > this.boostEndTime) {
             this.boostActive = false;
             this.eventSystem.emit(GameEvents.BOOST_EXPIRED);
+        }
+        
+        // Throttled UI updates
+        this.updateUIThrottled();
+    }
+    
+    // Optimized energy addition for batch updates
+    addEnergyBatch(amount) {
+        const actualAmount = Math.floor(amount * (this.boostActive ? GameConfig.BOOST_MULTIPLIER : 1));
+        this.energy += actualAmount;
+        this.stats.totalEnergyEarned += actualAmount;
+        
+        // Don't emit events for every small update
+        return actualAmount;
+    }
+    
+    // Throttled UI updates
+    updateUIThrottled() {
+        const now = Date.now();
+        if (now - this.lastUIUpdate >= this.uiUpdateInterval) {
+            this.eventSystem.emit(GameEvents.ENERGY_CHANGED, this.energy);
+            this.lastUIUpdate = now;
         }
     }
     
@@ -231,31 +266,25 @@ window.GameState = class GameState {
         return true;
     }
     
-    // Check achievements
+    // Optimized achievement checking
     checkAchievements() {
+        // Only check if cooldown has expired
+        const now = Date.now();
+        if (now - this.achievementCheckCooldown < this.achievementCheckInterval) {
+            return;
+        }
+        this.achievementCheckCooldown = now;
+        
         // First click
         if (this.stats.totalClicks > 0 && !this.achievements.first_click) {
             this.unlockAchievement('first_click');
         }
         
-        // Energy milestones
-        if (this.energy >= 100 && !this.achievements.energy_100) {
-            this.unlockAchievement('energy_100');
-        }
-        if (this.energy >= 1000 && !this.achievements.energy_1000) {
-            this.unlockAchievement('energy_1000');
-        }
-        if (this.energy >= 1000000 && !this.achievements.energy_1m) {
-            this.unlockAchievement('energy_1m');
-        }
+        // Energy milestones (cached)
+        this.checkEnergyAchievements();
         
-        // Level milestones
-        if (this.level >= 5 && !this.achievements.level_5) {
-            this.unlockAchievement('level_5');
-        }
-        if (this.level >= 10 && !this.achievements.level_10) {
-            this.unlockAchievement('level_10');
-        }
+        // Level milestones (cached)
+        this.checkLevelAchievements();
         
         // Prestige
         if (this.prestigeCount > 0 && !this.achievements.first_prestige) {
@@ -272,14 +301,56 @@ window.GameState = class GameState {
             this.unlockAchievement('speed_demon');
         }
         
-        // Generator master
+        // Generator master (expensive, check less frequently)
+        if (this.pendingAchievementChecks.has('generator_master')) {
+            this.checkGeneratorMasterAchievement();
+            this.pendingAchievementChecks.delete('generator_master');
+        }
+    }
+    
+    checkEnergyAchievements() {
+        const cacheKey = `energy_${Math.floor(this.energy / 100)}`;
+        if (this.achievementCache.has(cacheKey)) return;
+        
+        if (this.energy >= 100 && !this.achievements.energy_100) {
+            this.unlockAchievement('energy_100');
+        }
+        if (this.energy >= 1000 && !this.achievements.energy_1000) {
+            this.unlockAchievement('energy_1000');
+        }
+        if (this.energy >= 1000000 && !this.achievements.energy_1m) {
+            this.unlockAchievement('energy_1m');
+        }
+        
+        this.achievementCache.set(cacheKey, true);
+    }
+    
+    checkLevelAchievements() {
+        const cacheKey = `level_${this.level}`;
+        if (this.achievementCache.has(cacheKey)) return;
+        
+        if (this.level >= 5 && !this.achievements.level_5) {
+            this.unlockAchievement('level_5');
+        }
+        if (this.level >= 10 && !this.achievements.level_10) {
+            this.unlockAchievement('level_10');
+        }
+        
+        this.achievementCache.set(cacheKey, true);
+    }
+    
+    checkGeneratorMasterAchievement() {
+        if (this.achievements.generator_master) return;
+        
         let hasAllGenerators = true;
-        GameConfig.GENERATORS.forEach(gen => {
+        for (const gen of GameConfig.GENERATORS) {
             if (this.generators[gen.id].level < 10) {
                 hasAllGenerators = false;
+                break;
             }
-        });
-        if (hasAllGenerators && !this.achievements.generator_master) {
+        }
+        
+        if (hasAllGenerators) {
             this.unlockAchievement('generator_master');
         }
     }
