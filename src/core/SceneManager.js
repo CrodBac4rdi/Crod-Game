@@ -135,12 +135,14 @@ window.SceneManager = class SceneManager {
     }
     
     createBackground() {
-        // Create starfield
+        // Create MASSIVE starfield with nebulas
         const starsGeometry = new THREE.BufferGeometry();
         const starPositions = [];
         const starColors = [];
+        const starSizes = [];
         
-        for (let i = 0; i < 2000; i++) {
+        // Create 10000 stars for EPIC background
+        for (let i = 0; i < 10000; i++) {
             const x = (Math.random() - 0.5) * 300;
             const y = (Math.random() - 0.5) * 300;
             const z = -Math.random() * 200 - 50;

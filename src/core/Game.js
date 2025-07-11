@@ -21,8 +21,13 @@ window.CosmicClicker = class CosmicClicker {
     
     async init() {
         try {
-            // Update loading progress
-            this.updateLoadingProgress(10, 'Initializing game...');
+            // Show detailed loading progress
+            console.log('Starting initialization...');
+            this.updateLoadingProgress(5, 'Checking systems...');
+            await new Promise(r => setTimeout(r, 100));
+            
+            this.updateLoadingProgress(10, 'Initializing core systems...');
+            await new Promise(r => setTimeout(r, 100));
             
             // Load save data
             this.updateLoadingProgress(20, 'Loading save data...');
@@ -30,34 +35,55 @@ window.CosmicClicker = class CosmicClicker {
             if (saveData) {
                 this.gameState.loadSave(saveData);
             }
+            await new Promise(r => setTimeout(r, 100));
             
             // Initialize 3D scene
-            this.updateLoadingProgress(40, 'Creating universe...');
+            this.updateLoadingProgress(30, 'Generating cosmic orb...');
             const canvas = document.getElementById('game-canvas');
+            await new Promise(r => setTimeout(r, 100));
+            
+            this.updateLoadingProgress(40, 'Creating universe...');
             this.sceneManager.init(canvas);
+            await new Promise(r => setTimeout(r, 200));
+            
+            this.updateLoadingProgress(50, 'Spawning stars...');
+            await new Promise(r => setTimeout(r, 100));
             
             // Initialize UI managers
             this.updateLoadingProgress(60, 'Building interface...');
             this.notificationManager = new NotificationManager(this.eventSystem);
+            await new Promise(r => setTimeout(r, 100));
+            
+            this.updateLoadingProgress(70, 'Loading effects system...');
             this.floatingTextManager = new FloatingTextManager(this.eventSystem);
+            await new Promise(r => setTimeout(r, 100));
+            
+            this.updateLoadingProgress(75, 'Initializing UI...');
             this.uiManager = new UIManager(
                 this.gameState,
                 this.eventSystem,
                 this.upgradeManager,
                 this.achievementManager
             );
+            await new Promise(r => setTimeout(r, 100));
             
             // Setup game events
-            this.updateLoadingProgress(80, 'Setting up systems...');
+            this.updateLoadingProgress(85, 'Connecting systems...');
             this.setupEvents();
+            await new Promise(r => setTimeout(r, 100));
             
             // Enable auto-save if needed
+            this.updateLoadingProgress(90, 'Configuring save system...');
             if (this.gameState.autoSave) {
                 this.saveManager.enableAutoSave(this.gameState);
             }
+            await new Promise(r => setTimeout(r, 100));
             
             // Start game loop
-            this.updateLoadingProgress(100, 'Ready!');
+            this.updateLoadingProgress(95, 'Finalizing...');
+            await new Promise(r => setTimeout(r, 100));
+            
+            this.updateLoadingProgress(100, 'READY TO LAUNCH!');
             
             // Hide loading screen
             setTimeout(() => {

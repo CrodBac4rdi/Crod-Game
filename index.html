@@ -143,8 +143,16 @@
         </div>
     </div>
     
-    <!-- Load Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+    <!-- Load Three.js first and ensure it's ready -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js"></script>
+    
+    <!-- Wait for Three.js before loading modules -->
+    <script>
+        // Force synchronous loading
+        if (typeof THREE === 'undefined') {
+            document.write('<script src="https://unpkg.com/three@0.152.0/build/three.min.js"><\/script>');
+        }
+    </script>
     
     <!-- Load game modules -->
     <script src="src/core/GameConfig.js"></script>
@@ -164,15 +172,37 @@
     
     <!-- Initialize Game -->
     <script>
-        // Wait for Three.js to load
+        // Wait for Three.js to load with timeout
+        let checkCount = 0;
         function checkThreeJS() {
+            checkCount++;
             if (typeof THREE === 'undefined') {
-                console.log('Waiting for Three.js...');
+                if (checkCount > 50) { // 5 second timeout
+                    console.error('Three.js failed to load!');
+                    document.getElementById('loading-text').textContent = 'Failed to load 3D engine!';
+                    // Try loading backup
+                    loadBackupThree();
+                    return;
+                }
+                console.log('Waiting for Three.js...', checkCount);
                 setTimeout(checkThreeJS, 100);
                 return;
             }
             console.log('Three.js loaded, starting game...');
             initGame();
+        }
+        
+        function loadBackupThree() {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js';
+            script.onload = () => {
+                console.log('Backup Three.js loaded!');
+                initGame();
+            };
+            script.onerror = () => {
+                document.getElementById('loading-text').textContent = 'Critical error: Could not load 3D engine';
+            };
+            document.head.appendChild(script);
         }
         
         function initGame() {
