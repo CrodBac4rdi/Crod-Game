@@ -507,6 +507,9 @@
             setTimeout(() => {
                 document.getElementById('loading').style.display = 'none';
             }, 1000);
+            
+            // Start animation
+            animate();
         }
         
         // Create Central Sphere
@@ -1069,13 +1072,16 @@
         window.addEventListener('load', () => {
             const saved = localStorage.getItem('cosmicForge3D');
             if (saved) {
-                gameState = JSON.parse(saved);
-                calculateProduction();
-                calculateClickPower();
+                try {
+                    gameState = JSON.parse(saved);
+                    calculateProduction();
+                    calculateClickPower();
+                } catch (e) {
+                    console.error('Failed to load save:', e);
+                }
             }
             
             init();
-            animate();
             updateUI();
         });
     </script>
