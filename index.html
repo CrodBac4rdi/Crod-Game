@@ -1,243 +1,139 @@
-<\!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Game Test</title>
-    <style>
-        body {
-            background: #000;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        
-        #container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-        }
-        
-        #canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-        
-        #ui {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0,0,0,0.8);
-            padding: 20px;
-            border-radius: 8px;
-            z-index: 100;
-        }
-        
-        #status {
-            color: #00d4ff;
-            margin-bottom: 10px;
-        }
-        
-        .btn {
-            background: #00d4ff;
-            color: #000;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: 5px;
-        }
-    </style>
+    <title>Cosmic Clicker 3D - Clean Modular</title>
+    <link rel="stylesheet" href="src/styles/main.css">
+    <link rel="stylesheet" href="src/styles/ui.css">
+    <link rel="stylesheet" href="src/styles/effects.css">
 </head>
 <body>
-    <div id="container">
-        <canvas id="canvas"></canvas>
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <h1 class="loading-title">COSMIC CLICKER 3D</h1>
+            <div class="loading-bar">
+                <div class="loading-progress" id="loading-progress"></div>
+            </div>
+            <p class="loading-text" id="loading-text">Loading clean modular architecture...</p>
+        </div>
+    </div>
+
+    <div id="game-container" class="game-container" style="display: none;">
+        <canvas id="game-canvas"></canvas>
         
-        <div id="ui">
-            <div id="status">Loading...</div>
-            <button class="btn" onclick="game.click()">Click Orb</button>
-            <button class="btn" onclick="game.reset()">Reset</button>
-            <div>Energy: <span id="energy">0</span></div>
-            <div>Clicks: <span id="clicks">0</span></div>
+        <div class="game-ui">
+            <div class="top-bar">
+                <div class="resource-panel">
+                    <div class="resource energy">
+                        <span class="resource-icon">⚡</span>
+                        <span class="resource-value" id="energy-value">0</span>
+                        <span class="resource-rate" id="energy-rate">+0 /s</span>
+                    </div>
+                    <div class="resource crystals">
+                        <span class="resource-icon">💎</span>
+                        <span class="resource-value" id="crystals-value">0</span>
+                    </div>
+                </div>
+                
+                <div class="level-panel">
+                    <div class="level-info">
+                        <span class="level-label">Level</span>
+                        <span class="level-value" id="level-value">1</span>
+                    </div>
+                    <div class="xp-bar">
+                        <div class="xp-fill" id="xp-fill"></div>
+                        <span class="xp-text" id="xp-text">0 / 100 XP</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bottom-bar">
+                <button class="action-btn" id="settings-btn">
+                    <span class="btn-icon">⚙️</span>
+                    <span class="btn-text">Settings</span>
+                </button>
+            </div>
+            
+            <div id="floating-texts" class="floating-texts"></div>
+            <div id="notifications" class="notifications"></div>
         </div>
     </div>
     
-    <\!-- Three.js -->
+    <div id="settings-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Settings</h2>
+            <div class="settings-group">
+                <label>Graphics Quality</label>
+                <select id="graphics-quality">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                </select>
+            </div>
+            <button class="modal-close" onclick="document.getElementById('settings-modal').style.display='none'">Close</button>
+        </div>
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js"></script>
+    <script src="src/GameShell.js"></script>
+    <script src="src/systems/ConfigSystem.js"></script>
+    <script src="src/systems/EventSystem.js"></script>
+    <script src="src/systems/SceneSystem.js"></script>
+    <script src="src/systems/UISystem.js"></script>
+    <script src="src/systems/GameSystem.js"></script>
     
     <script>
-        class SimpleGame {
-            constructor() {
-                this.energy = 0;
-                this.clicks = 0;
-                this.scene = null;
-                this.camera = null;
-                this.renderer = null;
-                this.orb = null;
-                this.isRunning = false;
+        async function initModularGame() {
+            try {
+                console.log('🚀 CLEAN MODULAR INIT START');
                 
-                console.log('SimpleGame created');
-            }
-            
-            init() {
-                try {
-                    this.updateStatus('Initializing 3D scene...');
-                    
-                    // Create scene
-                    this.scene = new THREE.Scene();
-                    this.scene.background = new THREE.Color(0x0a0a0f);
-                    
-                    // Create camera
-                    this.camera = new THREE.PerspectiveCamera(
-                        75,
-                        window.innerWidth / window.innerHeight,
-                        0.1,
-                        1000
-                    );
-                    this.camera.position.z = 5;
-                    
-                    // Create renderer
-                    const canvas = document.getElementById('canvas');
-                    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-                    this.renderer.setSize(window.innerWidth, window.innerHeight);
-                    
-                    // Create orb
-                    this.createOrb();
-                    
-                    // Add lights
-                    const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-                    this.scene.add(ambientLight);
-                    
-                    const pointLight = new THREE.PointLight(0x00d4ff, 1, 100);
-                    pointLight.position.set(10, 10, 10);
-                    this.scene.add(pointLight);
-                    
-                    // Setup events
-                    this.setupEvents();
-                    
-                    // Start render loop
-                    this.isRunning = true;
-                    this.animate();
-                    
-                    this.updateStatus('Game ready\! Click the orb\!');
-                    console.log('SimpleGame initialized successfully');
-                    
-                } catch (error) {
-                    this.updateStatus(`Error: ${error.message}`);
-                    console.error('Game initialization failed:', error);
-                }
-            }
-            
-            createOrb() {
-                const geometry = new THREE.SphereGeometry(1, 32, 32);
-                const material = new THREE.MeshStandardMaterial({
-                    color: 0x00d4ff,
-                    emissive: 0x001122,
-                    metalness: 0.3,
-                    roughness: 0.7
-                });
-                
-                this.orb = new THREE.Mesh(geometry, material);
-                this.scene.add(this.orb);
-            }
-            
-            setupEvents() {
-                // Window resize
-                window.addEventListener('resize', () => {
-                    this.camera.aspect = window.innerWidth / window.innerHeight;
-                    this.camera.updateProjectionMatrix();
-                    this.renderer.setSize(window.innerWidth, window.innerHeight);
-                });
-                
-                // Click detection
-                const raycaster = new THREE.Raycaster();
-                const mouse = new THREE.Vector2();
-                
-                document.addEventListener('click', (event) => {
-                    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-                    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-                    
-                    raycaster.setFromCamera(mouse, this.camera);
-                    const intersects = raycaster.intersectObjects([this.orb]);
-                    
-                    if (intersects.length > 0) {
-                        this.click();
-                    }
-                });
-            }
-            
-            click() {
-                this.clicks++;
-                this.energy += 1;
-                
-                // Animate orb
-                if (this.orb) {
-                    this.orb.scale.set(1.2, 1.2, 1.2);
-                    setTimeout(() => {
-                        this.orb.scale.set(1, 1, 1);
-                    }, 100);
+                if (typeof THREE === 'undefined') {
+                    throw new Error('Three.js not loaded');
                 }
                 
-                this.updateUI();
-                console.log(`Click\! Energy: ${this.energy}, Clicks: ${this.clicks}`);
-            }
-            
-            reset() {
-                this.energy = 0;
-                this.clicks = 0;
-                this.updateUI();
-                console.log('Game reset');
-            }
-            
-            animate() {
-                if (\!this.isRunning) return;
+                window.gameShell = new GameShell();
                 
-                requestAnimationFrame(() => this.animate());
+                gameShell.addSystem('config', ConfigSystem, []);
+                gameShell.addSystem('events', EventSystem, []);
+                gameShell.addSystem('scene', SceneSystem, ['config', 'events']);
+                gameShell.addSystem('ui', UISystem, ['config', 'events']);
+                gameShell.addSystem('game', GameSystem, ['config', 'events', 'ui', 'scene']);
                 
-                // Rotate orb
-                if (this.orb) {
-                    this.orb.rotation.y += 0.01;
-                    this.orb.position.y = Math.sin(Date.now() * 0.001) * 0.2;
+                await gameShell.initialize();
+                
+                console.log('✅ CLEAN MODULAR INIT COMPLETE');
+                
+            } catch (error) {
+                console.error('❌ MODULAR INIT FAILED:', error);
+                
+                const loadingText = document.getElementById('loading-text');
+                if (loadingText) {
+                    loadingText.innerHTML = `
+                        <div style="color: #ff3366; font-size: 14px;">
+                            <strong>Error:</strong> ${error.message}<br>
+                            <button onclick="location.reload()" style="margin-top: 10px; padding: 5px 10px; background: #00d4ff; color: #000; border: none; border-radius: 3px; cursor: pointer;">
+                                Reload
+                            </button>
+                        </div>
+                    `;
                 }
-                
-                // Render
-                this.renderer.render(this.scene, this.camera);
-            }
-            
-            updateStatus(message) {
-                document.getElementById('status').textContent = message;
-            }
-            
-            updateUI() {
-                document.getElementById('energy').textContent = this.energy;
-                document.getElementById('clicks').textContent = this.clicks;
-            }
-            
-            stop() {
-                this.isRunning = false;
             }
         }
         
-        // Create game instance
-        const game = new SimpleGame();
-        
-        // Initialize when Three.js is ready
-        window.addEventListener('load', () => {
-            if (typeof THREE \!== 'undefined') {
-                game.init();
-            } else {
-                game.updateStatus('Three.js failed to load');
-            }
-        });
-        
-        // Global error handler
-        window.addEventListener('error', (e) => {
-            game.updateStatus(`Error: ${e.message}`);
-            console.error('Global error:', e);
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📦 DOM READY');
+            
+            setTimeout(() => {
+                if (typeof THREE !== 'undefined') {
+                    console.log('📦 THREE.JS READY');
+                    initModularGame();
+                } else {
+                    console.error('❌ THREE.JS FAILED');
+                    document.getElementById('loading-text').textContent = 'Three.js failed to load';
+                }
+            }, 500);
         });
     </script>
 </body>
 </html>
-EOF < /dev/null
