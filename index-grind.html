@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevSim Grind - The Real Dev Experience</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg: #0a0a0a;
+            --surface: #141414;
+            --surface-hover: #1a1a1a;
+            --border: #2a2a2a;
+            --text: #e0e0e0;
+            --text-dim: #808080;
+            --primary: #00ff88;
+            --secondary: #ff0088;
+            --warning: #ffaa00;
+            --error: #ff3333;
+            --success: #00ff88;
+        }
+        
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        /* Terminal Style UI */
+        .terminal-header {
+            background: var(--surface);
+            border-bottom: 2px solid var(--primary);
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .stats-bar {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            font-family: monospace;
+        }
+        
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .stat-label {
+            color: var(--text-dim);
+            font-size: 12px;
+        }
+        
+        .stat-value {
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .money {
+            color: var(--success);
+        }
+        
+        .energy {
+            color: var(--warning);
+        }
+        
+        .stress {
+            color: var(--error);
+        }
+        
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            height: calc(100vh - 60px);
+            gap: 1px;
+            background: var(--border);
+            margin-top: 1px;
+        }
+        
+        .panel {
+            background: var(--surface);
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        
+        .panel-title {
+            color: var(--primary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        /* Code Editor */
+        .code-editor {
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1rem;
+            font-family: monospace;
+            position: relative;
+            height: 400px;
+            overflow: hidden;
+        }
+        
+        .code-line {
+            color: var(--text-dim);
+            margin: 2px 0;
+            opacity: 0.3;
+            transition: all 0.2s;
+        }
+        
+        .code-line.active {
+            color: var(--primary);
+            opacity: 1;
+            text-shadow: 0 0 10px var(--primary);
+        }
+        
+        .code-line.error {
+            color: var(--error);
+            text-decoration: underline wavy var(--error);
+        }
+        
+        /* Progress Bars */
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.3s;
+            position: relative;
+        }
+        
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--bg);
+            mix-blend-mode: difference;
+        }
+        
+        /* Action Buttons */
+        .btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            width: 100%;
+            margin: 0.25rem 0;
+        }
+        
+        .btn:hover:not(:disabled) {
+            background: var(--surface-hover);
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateX(2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: var(--bg);
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: var(--success);
+            transform: scale(1.02);
+        }
+        
+        .btn-danger {
+            border-color: var(--error);
+            color: var(--error);
+        }
+        
+        /* Project Card */
+        .project-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            margin: 0.5rem 0;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .project-card:hover {
+            border-color: var(--primary);
+            transform: translateX(4px);
+        }
+        
+        .project-card.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+        }
+        
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .project-name {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .project-reward {
+            color: var(--success);
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .project-details {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin: 0.25rem 0;
+        }
+        
+        .difficulty {
+            display: inline-block;
+            padding: 2px 6px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            font-size: 10px;
+            margin-right: 0.5rem;
+        }
+        
+        .difficulty-1 { border-color: var(--success); color: var(--success); }
+        .difficulty-2 { border-color: var(--warning); color: var(--warning); }
+        .difficulty-3 { border-color: var(--secondary); color: var(--secondary); }
+        .difficulty-4 { border-color: var(--error); color: var(--error); }
+        
+        /* Bug List */
+        .bug-item {
+            background: var(--bg);
+            border: 1px solid var(--error);
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: bugPulse 2s infinite;
+        }
+        
+        @keyframes bugPulse {
+            0%, 100% { border-color: var(--error); }
+            50% { border-color: var(--warning); }
+        }
+        
+        .bug-name {
+            color: var(--error);
+            font-size: 12px;
+        }
+        
+        /* Log Output */
+        .log-output {
+            background: #000;
+            border: 1px solid var(--border);
+            padding: 0.5rem;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        
+        .log-entry {
+            margin: 2px 0;
+            opacity: 0.8;
+        }
+        
+        .log-error { color: var(--error); }
+        .log-success { color: var(--success); }
+        .log-warning { color: var(--warning); }
+        .log-info { color: var(--text-dim); }
+        
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--surface);
+            border: 2px solid var(--primary);
+            padding: 2rem;
+            min-width: 400px;
+            z-index: 1000;
+            box-shadow: 0 0 50px rgba(0, 255, 136, 0.3);
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 999;
+        }
+        
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--surface);
+            border: 2px solid var(--primary);
+            padding: 1rem 1.5rem;
+            animation: slideIn 0.3s ease-out;
+            z-index: 200;
+            min-width: 300px;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+        
+        .notification-error {
+            border-color: var(--error);
+            color: var(--error);
+        }
+        
+        .notification-success {
+            border-color: var(--success);
+            color: var(--success);
+        }
+        
+        /* Typing Effect */
+        .typing::after {
+            content: '_';
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        /* Restricted Actions */
+        .locked {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+        
+        .locked::after {
+            content: '🔒';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+        }
+        
+        .requires {
+            font-size: 10px;
+            color: var(--warning);
+            margin-top: 4px;
+        }
+        
+        /* Energy Bar Animation */
+        .energy-low {
+            animation: energyWarning 1s infinite;
+        }
+        
+        @keyframes energyWarning {
+            0%, 100% { border-color: var(--error); }
+            50% { border-color: transparent; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <script>
+        const { useState, useEffect, useCallback, useRef } = React;
+        const { createRoot } = ReactDOM;
+        
+        // GRIND GAME COMPONENT
+        function DevSimGrind() {
+            // Core game state - START SMALL
+            const [gameState, setGameState] = useState({
+                money: 100, // Start with almost nothing
+                energy: 100,
+                stress: 0,
+                experience: 0,
+                level: 1,
+                linesOfCode: 0,
+                bugs: 0,
+                reputation: 0,
+                skills: {
+                    coding: 1,
+                    debugging: 1,
+                    architecture: 0,
+                    optimization: 0
+                },
+                unlocks: {
+                    debugging: false,
+                    refactoring: false,
+                    freelancing: false,
+                    hiring: false,
+                    automation: false
+                }
+            });
+            
+            const [currentProject, setCurrentProject] = useState(null);
+            const [availableProjects, setAvailableProjects] = useState([]);
+            const [bugs, setBugs] = useState([]);
+            const [logs, setLogs] = useState([]);
+            const [codeLines, setCodeLines] = useState([]);
+            const [notifications, setNotifications] = useState([]);
+            const [isCoding, setIsCoding] = useState(false);
+            const [isDebugging, setIsDebugging] = useState(false);
+            
+            const codeInterval = useRef(null);
+            const energyInterval = useRef(null);
+            
+            // Initialize game
+            useEffect(() => {
+                addLog('System initialized...', 'info');
+                addLog('Welcome to DevSim Grind. Type code to survive.', 'success');
+                generateInitialProjects();
+                
+                // Energy drain
+                energyInterval.current = setInterval(() => {
+                    setGameState(prev => {
+                        const newEnergy = Math.max(0, prev.energy - 0.5);
+                        if (newEnergy === 0) {
+                            addLog('You passed out from exhaustion!', 'error');
+                            if (currentProject) {
+                                failProject();
+                            }
+                        }
+                        return { ...prev, energy: newEnergy };
+                    });
+                }, 1000);
+                
+                return () => {
+                    clearInterval(energyInterval.current);
+                    clearInterval(codeInterval.current);
+                };
+            }, []);
+            
+            // Generate initial cheap projects
+            function generateInitialProjects() {
+                const projects = [
+                    {
+                        id: 1,
+                        name: 'Fix Button Color',
+                        client: 'Local Shop',
+                        reward: 50,
+                        difficulty: 1,
+                        linesRequired: 20,
+                        deadline: 60,
+                        requirements: { coding: 1 }
+                    },
+                    {
+                        id: 2,
+                        name: 'Add Contact Form',
+                        client: 'Freelance Site',
+                        reward: 100,
+                        difficulty: 1,
+                        linesRequired: 40,
+                        deadline: 120,
+                        requirements: { coding: 2 }
+                    },
+                    {
+                        id: 3,
+                        name: 'Debug Login System',
+                        client: 'Startup',
+                        reward: 150,
+                        difficulty: 2,
+                        linesRequired: 30,
+                        bugsToFix: 3,
+                        deadline: 90,
+                        requirements: { coding: 3, debugging: 1 }
+                    }
+                ];
+                
+                setAvailableProjects(projects);
+            }
+            
+            // Start project - CHECK REQUIREMENTS
+            function startProject(project) {
+                // Check requirements
+                for (const [skill, level] of Object.entries(project.requirements)) {
+                    if (gameState.skills[skill] < level) {
+                        showNotification(`Need ${skill} level ${level}!`, 'error');
+                        return;
+                    }
+                }
+                
+                // Check energy
+                if (gameState.energy < 30) {
+                    showNotification('Too tired! Need at least 30 energy.', 'error');
+                    return;
+                }
+                
+                setCurrentProject({
+                    ...project,
+                    linesWritten: 0,
+                    bugsFixed: 0,
+                    timeLeft: project.deadline,
+                    quality: 100
+                });
+                
+                addLog(`Started: ${project.name}`, 'success');
+                generateCodeLines(project);
+                
+                // Start deadline timer
+                const timer = setInterval(() => {
+                    setCurrentProject(prev => {
+                        if (!prev) {
+                            clearInterval(timer);
+                            return null;
+                        }
+                        
+                        const newTime = prev.timeLeft - 1;
+                        if (newTime <= 0) {
+                            clearInterval(timer);
+                            failProject();
+                            return null;
+                        }
+                        
+                        return { ...prev, timeLeft: newTime };
+                    });
+                }, 1000);
+            }
+            
+            // Manual coding - REQUIRES CLICKING
+            function writeCode() {
+                if (!currentProject || isCoding || gameState.energy < 5) return;
+                
+                setIsCoding(true);
+                
+                // Drain energy
+                setGameState(prev => ({
+                    ...prev,
+                    energy: Math.max(0, prev.energy - 5),
+                    stress: Math.min(100, prev.stress + 2)
+                }));
+                
+                // Write code with skill-based speed
+                const linesPerClick = gameState.skills.coding;
+                let linesWritten = 0;
+                
+                codeInterval.current = setInterval(() => {
+                    if (linesWritten >= linesPerClick) {
+                        clearInterval(codeInterval.current);
+                        setIsCoding(false);
+                        return;
+                    }
+                    
+                    setCurrentProject(prev => {
+                        if (!prev || prev.linesWritten >= prev.linesRequired) return prev;
+                        
+                        const newLines = prev.linesWritten + 1;
+                        setCodeLines(lines => {
+                            const updated = [...lines];
+                            updated[newLines - 1] = { ...updated[newLines - 1], active: true };
+                            return updated;
+                        });
+                        
+                        // Generate bugs randomly
+                        if (Math.random() < 0.1) {
+                            generateBug();
+                        }
+                        
+                        return { ...prev, linesWritten: newLines };
+                    });
+                    
+                    linesWritten++;
+                    
+                    setGameState(prev => ({
+                        ...prev,
+                        linesOfCode: prev.linesOfCode + 1,
+                        experience: prev.experience + 1
+                    }));
+                }, 200);
+            }
+            
+            // Generate bug
+            function generateBug() {
+                const bugTypes = [
+                    'Null Pointer Exception',
+                    'Undefined Variable',
+                    'Type Mismatch',
+                    'Memory Leak',
+                    'Race Condition'
+                ];
+                
+                const bug = {
+                    id: Date.now(),
+                    name: bugTypes[Math.floor(Math.random() * bugTypes.length)],
+                    severity: Math.floor(Math.random() * 3) + 1,
+                    timeToFix: 5 + Math.floor(Math.random() * 10)
+                };
+                
+                setBugs(prev => [...prev, bug]);
+                setCurrentProject(prev => ({
+                    ...prev,
+                    quality: Math.max(0, prev.quality - bug.severity * 10)
+                }));
+                
+                addLog(`BUG: ${bug.name}`, 'error');
+            }
+            
+            // Debug - MANUAL PROCESS
+            function fixBug(bugId) {
+                if (!gameState.unlocks.debugging) {
+                    showNotification('Debugging not unlocked yet!', 'error');
+                    return;
+                }
+                
+                if (isDebugging || gameState.energy < 10) return;
+                
+                setIsDebugging(true);
+                const bug = bugs.find(b => b.id === bugId);
+                
+                setGameState(prev => ({
+                    ...prev,
+                    energy: Math.max(0, prev.energy - 10),
+                    stress: Math.min(100, prev.stress + 5)
+                }));
+                
+                // Debugging takes time
+                setTimeout(() => {
+                    setBugs(prev => prev.filter(b => b.id !== bugId));
+                    setCurrentProject(prev => ({
+                        ...prev,
+                        bugsFixed: prev.bugsFixed + 1,
+                        quality: Math.min(100, prev.quality + 10)
+                    }));
+                    
+                    setGameState(prev => ({
+                        ...prev,
+                        experience: prev.experience + bug.severity * 5,
+                        skills: {
+                            ...prev.skills,
+                            debugging: Math.min(10, prev.skills.debugging + 0.1)
+                        }
+                    }));
+                    
+                    addLog(`Fixed: ${bug.name}`, 'success');
+                    setIsDebugging(false);
+                }, bug.timeToFix * 100);
+            }
+            
+            // Complete project
+            function submitProject() {
+                if (!currentProject) return;
+                
+                const project = currentProject;
+                
+                // Check completion
+                if (project.linesWritten < project.linesRequired) {
+                    showNotification('Project not complete!', 'error');
+                    return;
+                }
+                
+                if (project.bugsToFix && bugs.length > 0) {
+                    showNotification(`Fix all ${bugs.length} bugs first!`, 'error');
+                    return;
+                }
+                
+                // Calculate reward based on quality
+                const qualityMultiplier = project.quality / 100;
+                const reward = Math.floor(project.reward * qualityMultiplier);
+                
+                setGameState(prev => ({
+                    ...prev,
+                    money: prev.money + reward,
+                    reputation: prev.reputation + project.difficulty,
+                    experience: prev.experience + project.difficulty * 10
+                }));
+                
+                addLog(`Completed: ${project.name} - Earned $${reward}`, 'success');
+                
+                // Check for level up
+                checkLevelUp();
+                
+                // Reset
+                setCurrentProject(null);
+                setCodeLines([]);
+                setBugs([]);
+                
+                // Generate new projects
+                generateNewProjects();
+            }
+            
+            // Fail project
+            function failProject() {
+                const project = currentProject;
+                setGameState(prev => ({
+                    ...prev,
+                    reputation: Math.max(0, prev.reputation - project.difficulty * 2),
+                    stress: Math.min(100, prev.stress + 20)
+                }));
+                
+                addLog(`FAILED: ${project.name} - Lost reputation`, 'error');
+                setCurrentProject(null);
+                setCodeLines([]);
+                setBugs([]);
+            }
+            
+            // Rest - COSTS TIME
+            function rest() {
+                if (currentProject) {
+                    showNotification('Cannot rest during project!', 'error');
+                    return;
+                }
+                
+                if (gameState.money < 10) {
+                    showNotification('Need $10 for coffee!', 'error');
+                    return;
+                }
+                
+                setGameState(prev => ({
+                    ...prev,
+                    money: prev.money - 10,
+                    energy: Math.min(100, prev.energy + 30),
+                    stress: Math.max(0, prev.stress - 10)
+                }));
+                
+                addLog('Took a coffee break...', 'info');
+            }
+            
+            // Check level up and unlocks
+            function checkLevelUp() {
+                const xpNeeded = gameState.level * 50;
+                if (gameState.experience >= xpNeeded) {
+                    setGameState(prev => {
+                        const newLevel = prev.level + 1;
+                        const newState = {
+                            ...prev,
+                            level: newLevel,
+                            experience: prev.experience - xpNeeded,
+                            skills: {
+                                ...prev.skills,
+                                coding: prev.skills.coding + 1
+                            }
+                        };
+                        
+                        // Unlocks
+                        if (newLevel === 2) newState.unlocks.debugging = true;
+                        if (newLevel === 5) newState.unlocks.refactoring = true;
+                        if (newLevel === 10) newState.unlocks.freelancing = true;
+                        if (newLevel === 15) newState.unlocks.hiring = true;
+                        if (newLevel === 20) newState.unlocks.automation = true;
+                        
+                        return newState;
+                    });
+                    
+                    showNotification(`LEVEL UP! Now level ${gameState.level + 1}`, 'success');
+                }
+            }
+            
+            // Generate new projects based on level
+            function generateNewProjects() {
+                const level = gameState.level;
+                const newProjects = [];
+                
+                // Harder projects unlock with level
+                if (level >= 1) {
+                    newProjects.push({
+                        id: Date.now() + 1,
+                        name: `Website Update`,
+                        client: 'Small Business',
+                        reward: 50 + level * 20,
+                        difficulty: 1,
+                        linesRequired: 30 + level * 10,
+                        deadline: 120,
+                        requirements: { coding: level }
+                    });
+                }
+                
+                if (level >= 3) {
+                    newProjects.push({
+                        id: Date.now() + 2,
+                        name: `API Integration`,
+                        client: 'Tech Startup',
+                        reward: 200 + level * 50,
+                        difficulty: 2,
+                        linesRequired: 100,
+                        bugsToFix: 5,
+                        deadline: 180,
+                        requirements: { coding: level + 1, debugging: 2 }
+                    });
+                }
+                
+                if (level >= 5) {
+                    newProjects.push({
+                        id: Date.now() + 3,
+                        name: `Mobile App Feature`,
+                        client: 'App Company',
+                        reward: 500 + level * 100,
+                        difficulty: 3,
+                        linesRequired: 200,
+                        bugsToFix: 10,
+                        deadline: 240,
+                        requirements: { coding: level + 2, debugging: 3, architecture: 1 }
+                    });
+                }
+                
+                setAvailableProjects(newProjects);
+            }
+            
+            // Generate code visualization
+            function generateCodeLines(project) {
+                const lines = [];
+                const codeSnippets = [
+                    'function processData(input) {',
+                    '  const result = [];',
+                    '  for (let i = 0; i < input.length; i++) {',
+                    '    if (validateInput(input[i])) {',
+                    '      result.push(transform(input[i]));',
+                    '    }',
+                    '  }',
+                    '  return result;',
+                    '}',
+                    '',
+                    'async function fetchAPI() {',
+                    '  try {',
+                    '    const response = await fetch(endpoint);',
+                    '    return await response.json();',
+                    '  } catch (error) {',
+                    '    console.error(error);',
+                    '  }',
+                    '}'
+                ];
+                
+                for (let i = 0; i < project.linesRequired; i++) {
+                    lines.push({
+                        text: codeSnippets[i % codeSnippets.length],
+                        active: false,
+                        hasError: false
+                    });
+                }
+                
+                setCodeLines(lines);
+            }
+            
+            // UI Helpers
+            function addLog(message, type = 'info') {
+                setLogs(prev => [...prev.slice(-19), {
+                    message,
+                    type,
+                    timestamp: new Date().toTimeString().slice(0, 8)
+                }]);
+            }
+            
+            function showNotification(message, type = 'info') {
+                const notif = {
+                    id: Date.now(),
+                    message,
+                    type
+                };
+                
+                setNotifications(prev => [...prev, notif]);
+                setTimeout(() => {
+                    setNotifications(prev => prev.filter(n => n.id !== notif.id));
+                }, 3000);
+            }
+            
+            // RENDER
+            return React.createElement('div', null,
+                // Header
+                React.createElement('div', { className: 'terminal-header' },
+                    React.createElement('div', { className: 'stats-bar' },
+                        React.createElement('div', { className: 'stat' },
+                            React.createElement('span', { className: 'stat-label' }, '$'),
+                            React.createElement('span', { className: 'stat-value money' }, gameState.money)
+                        ),
+                        React.createElement('div', { className: 'stat' },
+                            React.createElement('span', { className: 'stat-label' }, 'ENERGY'),
+                            React.createElement('span', { 
+                                className: `stat-value energy ${gameState.energy < 30 ? 'energy-low' : ''}` 
+                            }, `${Math.floor(gameState.energy)}%`)
+                        ),
+                        React.createElement('div', { className: 'stat' },
+                            React.createElement('span', { className: 'stat-label' }, 'STRESS'),
+                            React.createElement('span', { className: 'stat-value stress' }, `${Math.floor(gameState.stress)}%`)
+                        ),
+                        React.createElement('div', { className: 'stat' },
+                            React.createElement('span', { className: 'stat-label' }, 'LVL'),
+                            React.createElement('span', { className: 'stat-value' }, gameState.level)
+                        ),
+                        React.createElement('div', { className: 'stat' },
+                            React.createElement('span', { className: 'stat-label' }, 'XP'),
+                            React.createElement('span', { className: 'stat-value' }, 
+                                `${gameState.experience}/${gameState.level * 50}`)
+                        ),
+                        React.createElement('div', { className: 'stat' },
+                            React.createElement('span', { className: 'stat-label' }, 'REP'),
+                            React.createElement('span', { className: 'stat-value' }, gameState.reputation)
+                        )
+                    )
+                ),
+                
+                // Main Grid
+                React.createElement('div', { className: 'main-grid' },
+                    // Left Panel - Projects
+                    React.createElement('div', { className: 'panel' },
+                        React.createElement('div', { className: 'panel-title' }, 'AVAILABLE JOBS'),
+                        availableProjects.map(project =>
+                            React.createElement('div', {
+                                key: project.id,
+                                className: 'project-card',
+                                onClick: () => !currentProject && startProject(project)
+                            },
+                                React.createElement('div', { className: 'project-header' },
+                                    React.createElement('div', { className: 'project-name' }, project.name),
+                                    React.createElement('div', { className: 'project-reward' }, `$${project.reward}`)
+                                ),
+                                React.createElement('div', { className: 'project-details' },
+                                    React.createElement('span', { 
+                                        className: `difficulty difficulty-${project.difficulty}` 
+                                    }, `LVL ${project.difficulty}`),
+                                    `${project.linesRequired} lines • ${project.deadline}s deadline`
+                                ),
+                                Object.entries(project.requirements).map(([skill, level]) =>
+                                    React.createElement('div', {
+                                        key: skill,
+                                        className: 'requires'
+                                    }, `Requires: ${skill} ${level}`)
+                                )
+                            )
+                        ),
+                        
+                        // Actions
+                        React.createElement('div', { 
+                            style: { marginTop: '2rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }
+                        },
+                            React.createElement('div', { className: 'panel-title' }, 'ACTIONS'),
+                            React.createElement('button', {
+                                className: 'btn',
+                                onClick: rest,
+                                disabled: currentProject || gameState.money < 10
+                            }, 'COFFEE BREAK ($10)'),
+                            
+                            gameState.unlocks.debugging && React.createElement('button', {
+                                className: 'btn',
+                                disabled: !isDebugging
+                            }, 'DEBUG MODE ACTIVE'),
+                            
+                            gameState.unlocks.refactoring && React.createElement('button', {
+                                className: 'btn locked'
+                            }, 'REFACTOR CODE'),
+                            
+                            gameState.unlocks.automation && React.createElement('button', {
+                                className: 'btn locked'
+                            }, 'AUTO-CODE')
+                        )
+                    ),
+                    
+                    // Center - Work Area
+                    React.createElement('div', { className: 'panel' },
+                        currentProject ? React.createElement('div', null,
+                            React.createElement('div', { className: 'panel-title' }, 
+                                `WORKING: ${currentProject.name} [${currentProject.timeLeft}s]`
+                            ),
+                            
+                            // Progress
+                            React.createElement('div', { style: { marginBottom: '1rem' } },
+                                React.createElement('div', { className: 'progress-bar' },
+                                    React.createElement('div', {
+                                        className: 'progress-fill',
+                                        style: { 
+                                            width: `${(currentProject.linesWritten / currentProject.linesRequired) * 100}%` 
+                                        }
+                                    }),
+                                    React.createElement('div', { className: 'progress-text' },
+                                        `${currentProject.linesWritten}/${currentProject.linesRequired} lines`
+                                    )
+                                ),
+                                
+                                React.createElement('div', { 
+                                    className: 'progress-bar',
+                                    style: { marginTop: '0.5rem' }
+                                },
+                                    React.createElement('div', {
+                                        className: 'progress-fill',
+                                        style: { 
+                                            width: `${currentProject.quality}%`,
+                                            background: currentProject.quality > 70 ? 'var(--success)' : 
+                                                       currentProject.quality > 40 ? 'var(--warning)' : 'var(--error)'
+                                        }
+                                    }),
+                                    React.createElement('div', { className: 'progress-text' },
+                                        `Quality: ${currentProject.quality}%`
+                                    )
+                                )
+                            ),
+                            
+                            // Code Editor
+                            React.createElement('div', { className: 'code-editor' },
+                                codeLines.map((line, i) =>
+                                    React.createElement('div', {
+                                        key: i,
+                                        className: `code-line ${line.active ? 'active' : ''} ${line.hasError ? 'error' : ''}`
+                                    }, line.text)
+                                )
+                            ),
+                            
+                            // Controls
+                            React.createElement('div', { style: { marginTop: '1rem' } },
+                                React.createElement('button', {
+                                    className: 'btn btn-primary',
+                                    onClick: writeCode,
+                                    disabled: isCoding || gameState.energy < 5 || 
+                                             currentProject.linesWritten >= currentProject.linesRequired
+                                }, isCoding ? 'CODING...' : `WRITE CODE (${gameState.skills.coding} lines)`),
+                                
+                                React.createElement('button', {
+                                    className: 'btn',
+                                    onClick: submitProject,
+                                    disabled: currentProject.linesWritten < currentProject.linesRequired ||
+                                             (currentProject.bugsToFix && bugs.length > 0)
+                                }, 'SUBMIT PROJECT')
+                            )
+                        ) : React.createElement('div', { style: { textAlign: 'center', marginTop: '4rem' } },
+                            React.createElement('div', { className: 'panel-title' }, 'NO ACTIVE PROJECT'),
+                            React.createElement('p', { style: { color: 'var(--text-dim)' } }, 
+                                'Select a job from the left panel to start coding.')
+                        )
+                    ),
+                    
+                    // Right Panel - Bugs & Logs
+                    React.createElement('div', { className: 'panel' },
+                        // Bugs
+                        bugs.length > 0 && React.createElement('div', null,
+                            React.createElement('div', { className: 'panel-title' }, `BUGS (${bugs.length})`),
+                            bugs.map(bug =>
+                                React.createElement('div', {
+                                    key: bug.id,
+                                    className: 'bug-item'
+                                },
+                                    React.createElement('div', null,
+                                        React.createElement('div', { className: 'bug-name' }, bug.name),
+                                        React.createElement('div', { 
+                                            style: { fontSize: '10px', color: 'var(--text-dim)' }
+                                        }, `Severity: ${bug.severity}`)
+                                    ),
+                                    React.createElement('button', {
+                                        className: 'btn btn-danger',
+                                        onClick: () => fixBug(bug.id),
+                                        disabled: !gameState.unlocks.debugging || isDebugging
+                                    }, isDebugging ? 'FIXING...' : 'FIX')
+                                )
+                            )
+                        ),
+                        
+                        // Logs
+                        React.createElement('div', { style: { marginTop: '2rem' } },
+                            React.createElement('div', { className: 'panel-title' }, 'SYSTEM LOG'),
+                            React.createElement('div', { className: 'log-output' },
+                                logs.map((log, i) =>
+                                    React.createElement('div', {
+                                        key: i,
+                                        className: `log-entry log-${log.type}`
+                                    }, `[${log.timestamp}] ${log.message}`)
+                                )
+                            )
+                        ),
+                        
+                        // Skills
+                        React.createElement('div', { style: { marginTop: '2rem' } },
+                            React.createElement('div', { className: 'panel-title' }, 'SKILLS'),
+                            Object.entries(gameState.skills).map(([skill, level]) =>
+                                level > 0 && React.createElement('div', {
+                                    key: skill,
+                                    style: { 
+                                        display: 'flex', 
+                                        justifyContent: 'space-between',
+                                        margin: '0.25rem 0'
+                                    }
+                                },
+                                    React.createElement('span', { style: { textTransform: 'capitalize' } }, skill),
+                                    React.createElement('span', { style: { color: 'var(--primary)' } }, level)
+                                )
+                            )
+                        )
+                    )
+                ),
+                
+                // Notifications
+                notifications.map(notif =>
+                    React.createElement('div', {
+                        key: notif.id,
+                        className: `notification notification-${notif.type}`
+                    }, notif.message)
+                )
+            );
+        }
+        
+        // Initialize
+        const root = createRoot(document.getElementById('root'));
+        root.render(React.createElement(DevSimGrind));
+    </script>
+</body>
+</html>
