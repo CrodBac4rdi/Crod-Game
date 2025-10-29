@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="src/styles/main.css">
     <link rel="stylesheet" href="src/styles/ui.css">
     <link rel="stylesheet" href="src/styles/effects.css">
+    <link rel="stylesheet" href="src/styles/store.css">
 </head>
 <body>
     <div id="loading-screen" class="loading-screen">
@@ -82,6 +83,7 @@
     <script src="src/systems/SceneSystem.js"></script>
     <script src="src/systems/UISystem.js"></script>
     <script src="src/systems/GameSystem.js"></script>
+    <script src="src/systems/StoreSystem.js"></script>
     
     <script>
         async function initModularGame() {
@@ -99,6 +101,7 @@
                 gameShell.addSystem('scene', SceneSystem, ['config', 'events']);
                 gameShell.addSystem('ui', UISystem, ['config', 'events']);
                 gameShell.addSystem('game', GameSystem, ['config', 'events', 'ui', 'scene']);
+                gameShell.addSystem('store', StoreSystem, ['events', 'ui', 'game']);
                 
                 await gameShell.initialize();
                 

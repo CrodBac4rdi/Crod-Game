@@ -55,6 +55,10 @@ class GameSystem {
         this.eventSystem.on('canvas-click', (data) => {
             this.handleClick(data.x, data.y);
         });
+
+        this.eventSystem.on('building-purchased', () => {
+            this.recalculateEnergyPerSecond();
+        });
     }
     
     initializeGameState() {
@@ -123,6 +127,25 @@ class GameSystem {
         this.uiSystem.showNotification(`Level Up! You are now level ${this.gameState.level}`, 'success');
         
         console.log(`[GameSystem] Level up! Level: ${this.gameState.level}`);
+    }
+
+    spendEnergy(amount) {
+        if (this.gameState.energy >= amount) {
+            this.gameState.energy -= amount;
+            this.updateUI();
+            return true;
+        }
+        return false;
+    }
+
+    recalculateEnergyPerSecond() {
+        const storeSystem = window.gameShell.getSystem('store');
+        if (storeSystem) {
+            this.gameState.energyPerSecond = storeSystem.buildings.reduce((total, building) => {
+                return total + (building.owned * building.production);
+            }, 0);
+            this.updateUI();
+        }
     }
     
     start() {
