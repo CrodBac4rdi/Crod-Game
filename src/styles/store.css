@@ -1,0 +1,46 @@
+/* Store Styles */
+.store-container {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 300px;
+    max-height: 400px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    overflow-y: auto;
+    z-index: var(--z-ui);
+}
+
+.store-item {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.store-item:hover {
+    background: var(--border-color);
+}
+
+.store-item.purchased {
+    background: var(--bg-primary);
+    cursor: default;
+}
+
+.item-name {
+    font-weight: bold;
+}
+
+.item-cost {
+    color: var(--color-accent);
+}
+
+.item-owned {
+    color: var(--color-primary);
+}
