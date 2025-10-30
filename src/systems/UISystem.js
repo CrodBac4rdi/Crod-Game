@@ -45,7 +45,8 @@ class UISystem {
             'energy-rate',
             'level-value',
             'xp-fill',
-            'xp-text'
+            'xp-text',
+            'prestige-btn'
         ];
         
         elementIds.forEach(id => {
@@ -78,6 +79,13 @@ class UISystem {
             });
         }
         
+        const prestigeBtn = this.elements.get('prestige-btn');
+        if (prestigeBtn) {
+            prestigeBtn.addEventListener('click', () => {
+                window.gameShell.getSystem('game').prestige();
+            });
+        }
+
         // Keyboard shortcuts
         window.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
@@ -98,18 +106,18 @@ class UISystem {
         const rateElement = this.elements.get('energy-rate');
         
         if (energyElement) {
-            energyElement.textContent = this.formatNumber(value);
+            energyElement.textContent = window.formatNumber(value);
         }
         
         if (rateElement && rate > 0) {
-            rateElement.textContent = `+${this.formatNumber(rate)} /s`;
+            rateElement.textContent = `+${window.formatNumber(rate)} /s`;
         }
     }
     
     updateCrystals(value) {
         const element = this.elements.get('crystals-value');
         if (element) {
-            element.textContent = this.formatNumber(value);
+            element.textContent = window.formatNumber(value);
         }
     }
     
@@ -131,7 +139,7 @@ class UISystem {
         }
         
         if (textElement) {
-            textElement.textContent = `${this.formatNumber(current)} / ${this.formatNumber(required)} XP`;
+            textElement.textContent = `${window.formatNumber(current)} / ${window.formatNumber(required)} XP`;
         }
     }
     
@@ -197,13 +205,6 @@ class UISystem {
         if (settingsModal) {
             settingsModal.style.display = 'none';
         }
-    }
-    
-    formatNumber(num) {
-        if (num < 1000) return Math.floor(num).toString();
-        if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
-        if (num < 1000000000) return (num / 1000000).toFixed(1) + 'M';
-        return (num / 1000000000).toFixed(1) + 'B';
     }
     
     dispose() {
