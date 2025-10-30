@@ -15,6 +15,7 @@ class GameSystem {
         
         this.isRunning = false;
         this.lastUpdateTime = 0;
+        this.lastSaveTime = 0;
         
         this.configSystem = null;
         this.eventSystem = null;
@@ -71,8 +72,33 @@ class GameSystem {
         
         // Update UI
         this.updateUI();
+
+        this.loadGame();
     }
     
+    saveGame() {
+        const storeSystem = window.gameShell.getSystem('store');
+        const saveData = {
+            gameState: this.gameState,
+            buildings: storeSystem.buildings,
+            upgrades: storeSystem.upgrades,
+        };
+        localStorage.setItem('cosmicClickerSave', JSON.stringify(saveData));
+    }
+
+    loadGame() {
+        const savedData = localStorage.getItem('cosmicClickerSave');
+        if (savedData) {
+            const storeSystem = window.gameShell.getSystem('store');
+            const parsedData = JSON.parse(savedData);
+            this.gameState = parsedData.gameState;
+            storeSystem.buildings = parsedData.buildings;
+            storeSystem.upgrades = parsedData.upgrades;
+            this.recalculateEnergyPerSecond();
+            storeSystem.renderStore();
+        }
+    }
+
     handleClick(x, y) {
         // Check if click hits the orb
         if (this.sceneSystem.checkOrbClick(x, y)) {
@@ -129,6 +155,37 @@ class GameSystem {
         console.log(`[GameSystem] Level up! Level: ${this.gameState.level}`);
     }
 
+    getPrestigeCrystals() {
+        return Math.floor(Math.sqrt(this.gameState.energy / 1e6));
+    }
+
+    prestige() {
+        const crystals = this.getPrestigeCrystals();
+        if (crystals > 0) {
+            this.gameState.crystals += crystals;
+
+            // Reset game state
+            this.gameState.energy = this.configSystem.get('INITIAL_ENERGY');
+            this.gameState.level = this.configSystem.get('INITIAL_LEVEL');
+            this.gameState.xp = 0;
+            this.gameState.xpRequired = this.configSystem.get('BASE_XP_REQUIREMENT');
+            this.gameState.clickPower = this.configSystem.get('BASE_CLICK_VALUE');
+            this.gameState.energyPerSecond = 0;
+
+            // Reset store
+            const storeSystem = window.gameShell.getSystem('store');
+            storeSystem.initBuildings();
+            storeSystem.initUpgrades();
+            storeSystem.renderStore();
+
+            // Reset scene
+            this.sceneSystem.buildingContainer.clear();
+
+            this.updateUI();
+            this.uiSystem.showNotification(`You gained ${crystals} crystals!`, 'success');
+        }
+    }
+
     spendEnergy(amount) {
         if (this.gameState.energy >= amount) {
             this.gameState.energy -= amount;
@@ -175,6 +232,11 @@ class GameSystem {
         if (this.gameState.energyPerSecond > 0) {
             this.gameState.energy += this.gameState.energyPerSecond * deltaTime;
             this.updateUI();
+        }
+
+        if (now - this.lastSaveTime > 5000) { // Save every 5 seconds
+            this.saveGame();
+            this.lastSaveTime = now;
         }
         
         // Schedule next frame

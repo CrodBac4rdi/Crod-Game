@@ -73,7 +73,7 @@ class StoreSystem {
             building.owned++;
             building.cost = Math.ceil(building.baseCost * Math.pow(1.15, building.owned));
             this.updateBuildingUI(building);
-            this.events.emit('building-purchased');
+            this.events.emit('building-purchased', building);
         }
     }
 

@@ -5,6 +5,7 @@ class SceneSystem {
         this.camera = null;
         this.renderer = null;
         this.cosmicOrb = null;
+        this.buildingContainer = null;
         this.isAnimating = false;
         
         this.configSystem = null;
@@ -55,12 +56,22 @@ class SceneSystem {
             // Create cosmic orb
             this.createCosmicOrb();
             
+            this.buildingContainer = new THREE.Group();
+            this.scene.add(this.buildingContainer);
+
+            // Create starfield
+            this.createStarfield();
+
             // Create basic lighting
             this.createLights();
             
             // Setup resize handler
             window.addEventListener('resize', () => this.handleResize());
             
+            this.eventSystem.on('building-purchased', (building) => {
+                this.addBuilding(building);
+            });
+
             console.log('[SceneSystem] Scene initialized successfully');
             
         } catch (error) {
@@ -86,6 +97,27 @@ class SceneSystem {
         this.cosmicOrb.userData = { clickable: true };
     }
     
+    createStarfield() {
+        const starVertices = [];
+        for (let i = 0; i < 10000; i++) {
+            const x = THREE.MathUtils.randFloatSpread(2000);
+            const y = THREE.MathUtils.randFloatSpread(2000);
+            const z = THREE.MathUtils.randFloatSpread(2000);
+            starVertices.push(x, y, z);
+        }
+
+        const starGeometry = new THREE.BufferGeometry();
+        starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+
+        const starMaterial = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.7
+        });
+
+        this.starfield = new THREE.Points(starGeometry, starMaterial);
+        this.scene.add(this.starfield);
+    }
+
     createLights() {
         // Ambient light
         const ambient = new THREE.AmbientLight(0x404040, 0.5);
@@ -120,6 +152,14 @@ class SceneSystem {
             this.cosmicOrb.rotation.y += 0.01;
             this.cosmicOrb.position.y = Math.sin(Date.now() * 0.001) * 0.5;
         }
+
+        if (this.starfield) {
+            this.starfield.rotation.y += 0.0001;
+        }
+
+        if (this.buildingContainer) {
+            this.buildingContainer.rotation.y += 0.0005;
+        }
         
         // Render
         if (this.renderer && this.scene && this.camera) {
@@ -133,6 +173,33 @@ class SceneSystem {
         this.isAnimating = false;
     }
     
+    addBuilding(building) {
+        let geometry;
+        switch (building.id) {
+            case 'gen1':
+                geometry = new THREE.BoxGeometry(1, 1, 1);
+                break;
+            case 'gen2':
+                geometry = new THREE.ConeGeometry(1, 2, 8);
+                break;
+            case 'gen3':
+                geometry = new THREE.TorusGeometry(1, 0.4, 16, 100);
+                break;
+            default:
+                geometry = new THREE.BoxGeometry(1, 1, 1);
+        }
+
+        const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
+        const mesh = new THREE.Mesh(geometry, material);
+
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 10 + Math.random() * 5;
+        mesh.position.x = Math.cos(angle) * radius;
+        mesh.position.z = Math.sin(angle) * radius;
+
+        this.buildingContainer.add(mesh);
+    }
+
     // Check if click hits the orb
     checkOrbClick(x, y) {
         if (!this.camera || !this.cosmicOrb) return false;
