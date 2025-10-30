@@ -127,6 +127,10 @@ class SceneSystem {
         const directional = new THREE.DirectionalLight(0xffffff, 0.8);
         directional.position.set(10, 10, 5);
         this.scene.add(directional);
+
+        const pointLight = new THREE.PointLight(0x00d4ff, 1, 100);
+        pointLight.position.set(0, 0, 0);
+        this.cosmicOrb.add(pointLight);
     }
     
     handleResize() {
@@ -157,10 +161,10 @@ class SceneSystem {
             this.starfield.rotation.y += 0.0001;
         }
 
-        if (this.buildingContainer) {
-            this.buildingContainer.rotation.y += 0.0005;
-        }
-        
+        this.buildingContainer.children.forEach((building, index) => {
+            building.rotation.y += 0.01 + index * 0.001;
+        });
+
         // Render
         if (this.renderer && this.scene && this.camera) {
             this.renderer.render(this.scene, this.camera);
@@ -174,28 +178,44 @@ class SceneSystem {
     }
     
     addBuilding(building) {
-        let geometry;
+        let mesh;
+        const material = new THREE.MeshPhongMaterial({
+            color: 0x00d4ff,
+            emissive: 0x001122,
+        });
+
         switch (building.id) {
-            case 'gen1':
-                geometry = new THREE.BoxGeometry(1, 1, 1);
+            case 'gen1': { // Energy Condenser
+                const geometry = new THREE.IcosahedronGeometry(0.8, 0);
+                mesh = new THREE.Mesh(geometry, material);
                 break;
-            case 'gen2':
-                geometry = new THREE.ConeGeometry(1, 2, 8);
+            }
+            case 'gen2': { // Quantum Collector
+                const group = new THREE.Group();
+                const core = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), material);
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.1, 8, 32), material);
+                ring.rotation.x = Math.PI / 2;
+                group.add(core, ring);
+                mesh = group;
                 break;
-            case 'gen3':
-                geometry = new THREE.TorusGeometry(1, 0.4, 16, 100);
+            }
+            case 'gen3': { // Stellar Forge
+                const geometry = new THREE.TorusKnotGeometry(0.7, 0.1, 100, 16);
+                mesh = new THREE.Mesh(geometry, material);
                 break;
-            default:
-                geometry = new THREE.BoxGeometry(1, 1, 1);
+            }
+            default: {
+                const geometry = new THREE.BoxGeometry(1, 1, 1);
+                mesh = new THREE.Mesh(geometry, material);
+                break;
+            }
         }
 
-        const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
-        const mesh = new THREE.Mesh(geometry, material);
-
-        const angle = Math.random() * Math.PI * 2;
-        const radius = 10 + Math.random() * 5;
-        mesh.position.x = Math.cos(angle) * radius;
-        mesh.position.z = Math.sin(angle) * radius;
+        const buildingCount = this.buildingContainer.children.length;
+        const x = 15;
+        const y = (buildingCount % 5) * -2.5 + 5;
+        const z = Math.floor(buildingCount / 5) * -2.5;
+        mesh.position.set(x, y, z);
 
         this.buildingContainer.add(mesh);
     }
