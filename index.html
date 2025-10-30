@@ -105,8 +105,8 @@
                 gameShell.addSystem('events', EventSystem, []);
                 gameShell.addSystem('scene', SceneSystem, ['config', 'events']);
                 gameShell.addSystem('ui', UISystem, ['config', 'events']);
-                gameShell.addSystem('game', GameSystem, ['config', 'events', 'ui', 'scene']);
-                gameShell.addSystem('store', StoreSystem, ['events', 'ui', 'game']);
+                gameShell.addSystem('store', StoreSystem, ['events', 'ui']);
+                gameShell.addSystem('game', GameSystem, ['config', 'events', 'ui', 'scene', 'store']);
                 
                 await gameShell.initialize();
                 

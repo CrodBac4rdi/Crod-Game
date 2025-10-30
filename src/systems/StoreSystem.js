@@ -4,7 +4,6 @@ class StoreSystem {
     constructor() {
         this.events = null;
         this.ui = null;
-        this.game = null;
         this.buildings = [];
         this.upgrades = [];
     }
@@ -12,7 +11,6 @@ class StoreSystem {
     async init() {
         this.events = window.gameShell.getSystem('events');
         this.ui = window.gameShell.getSystem('ui');
-        this.game = window.gameShell.getSystem('game');
 
         console.log('🛒 StoreSystem initialized');
         this.initBuildings();
@@ -36,10 +34,16 @@ class StoreSystem {
     }
 
     renderStore() {
-        const storeContainer = document.createElement('div');
-        storeContainer.id = 'store-container';
-        storeContainer.className = 'store-container';
-        document.body.appendChild(storeContainer);
+        let storeContainer = document.getElementById('store-container');
+        if (!storeContainer) {
+            storeContainer = document.createElement('div');
+            storeContainer.id = 'store-container';
+            storeContainer.className = 'store-container';
+            document.body.appendChild(storeContainer);
+        }
+
+        // Clear existing content before re-rendering
+        storeContainer.innerHTML = '';
 
         this.buildings.forEach(building => {
             const buildingElement = document.createElement('div');
@@ -69,7 +73,8 @@ class StoreSystem {
 
     buyBuilding(buildingId) {
         const building = this.buildings.find(b => b.id === buildingId);
-        if (this.game.spendEnergy(building.cost)) {
+        const game = window.gameShell.getSystem('game');
+        if (game.spendEnergy(building.cost)) {
             building.owned++;
             building.cost = Math.ceil(building.baseCost * Math.pow(1.15, building.owned));
             this.updateBuildingUI(building);
@@ -85,7 +90,8 @@ class StoreSystem {
 
     buyUpgrade(upgradeId) {
         const upgrade = this.upgrades.find(u => u.id === upgradeId);
-        if (!upgrade.purchased && this.game.spendEnergy(upgrade.cost)) {
+        const game = window.gameShell.getSystem('game');
+        if (!upgrade.purchased && game.spendEnergy(upgrade.cost)) {
             upgrade.purchased = true;
             this.applyUpgrade(upgrade);
             this.updateUpgradeUI(upgrade);
@@ -93,13 +99,14 @@ class StoreSystem {
     }
 
     applyUpgrade(upgrade) {
+        const game = window.gameShell.getSystem('game');
         if (upgrade.effect.type === 'click') {
-            this.game.gameState.clickPower *= upgrade.effect.multiplier;
+            game.gameState.clickPower *= upgrade.effect.multiplier;
         } else if (upgrade.effect.type === 'building') {
             const building = this.buildings.find(b => b.id === upgrade.effect.buildingId);
             if (building) {
                 building.production *= upgrade.effect.multiplier;
-                this.game.recalculateEnergyPerSecond();
+                game.recalculateEnergyPerSecond();
             }
         }
     }
