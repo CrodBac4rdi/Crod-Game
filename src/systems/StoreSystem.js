@@ -23,6 +23,8 @@ class StoreSystem {
             { id: 'gen1', name: 'Energy Condenser', description: 'Generates 1 energy per second.', baseCost: 15, cost: 15, owned: 0, production: 1 },
             { id: 'gen2', name: 'Quantum Collector', description: 'Generates 8 energy per second.', baseCost: 120, cost: 120, owned: 0, production: 8 },
             { id: 'gen3', name: 'Stellar Forge', description: 'Generates 50 energy per second.', baseCost: 1500, cost: 1500, owned: 0, production: 50 },
+            { id: 'gen4', name: 'Photon Weaver', description: 'Generates 250 energy per second.', baseCost: 10000, cost: 10000, owned: 0, production: 250 },
+            { id: 'gen5', name: 'Neutrino Drill', description: 'Generates 1500 energy per second.', baseCost: 75000, cost: 75000, owned: 0, production: 1500 },
         ];
     }
 
@@ -30,6 +32,8 @@ class StoreSystem {
         this.upgrades = [
             { id: 'upg1', name: 'Reinforced Clicks', description: 'Doubles click power.', cost: 150, purchased: false, effect: { type: 'click', multiplier: 2 } },
             { id: 'upg2', name: 'Efficient Condensers', description: 'Doubles the production of Energy Condensers.', cost: 600, purchased: false, effect: { type: 'building', buildingId: 'gen1', multiplier: 2 } },
+            { id: 'upg3', name: 'Synergistic Overdrive', description: 'Boosts production of all buildings by 10%.', cost: 5000, purchased: false, effect: { type: 'all_buildings', multiplier: 1.1 } },
+            { id: 'upg4', name: 'Architectural Acumen', description: 'Adds a small passive energy bonus for each building owned.', cost: 10000, purchased: false, effect: { type: 'passive', bonus_per_building: 0.1 } },
         ];
     }
 
@@ -110,6 +114,15 @@ class StoreSystem {
                 building.production *= upgrade.effect.multiplier;
                 game.recalculateEnergyPerSecond();
             }
+        } else if (upgrade.effect.type === 'all_buildings') {
+            this.buildings.forEach(building => {
+                building.production *= upgrade.effect.multiplier;
+            });
+            game.recalculateEnergyPerSecond();
+        } else if (upgrade.effect.type === 'passive') {
+            const totalBuildings = this.buildings.reduce((sum, b) => sum + b.owned, 0);
+            game.gameState.passiveEnergyBonus += totalBuildings * upgrade.effect.bonus_per_building;
+            game.recalculateEnergyPerSecond();
         }
     }
 

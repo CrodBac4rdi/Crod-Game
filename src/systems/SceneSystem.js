@@ -5,7 +5,9 @@ class SceneSystem {
         this.camera = null;
         this.renderer = null;
         this.cosmicOrb = null;
-        this.buildingContainer = null;
+        this.buildingInstances = {};
+        this.buildingGeometries = {};
+        this.starfields = [];
         this.isAnimating = false;
         
         this.configSystem = null;
@@ -56,8 +58,8 @@ class SceneSystem {
             // Create cosmic orb
             this.createCosmicOrb();
             
-            this.buildingContainer = new THREE.Group();
-            this.scene.add(this.buildingContainer);
+            // Pre-generate building geometries
+            this.createBuildingGeometries();
 
             // Create starfield
             this.createStarfield();
@@ -68,6 +70,9 @@ class SceneSystem {
             // Setup resize handler
             window.addEventListener('resize', () => this.handleResize());
             
+            // Setup zoom handler
+            window.addEventListener('wheel', (event) => this.handleZoom(event));
+
             this.eventSystem.on('building-purchased', (building) => {
                 this.addBuilding(building);
             });
@@ -98,24 +103,34 @@ class SceneSystem {
     }
     
     createStarfield() {
-        const starVertices = [];
-        for (let i = 0; i < 10000; i++) {
-            const x = THREE.MathUtils.randFloatSpread(2000);
-            const y = THREE.MathUtils.randFloatSpread(2000);
-            const z = THREE.MathUtils.randFloatSpread(2000);
-            starVertices.push(x, y, z);
-        }
+        const starLayers = [
+            { count: 5000, color: 0xffffff, size: 0.5, speed: 0.0001 },
+            { count: 3000, color: 0xaaaaff, size: 0.7, speed: 0.0002 },
+            { count: 2000, color: 0xffaaff, size: 1.0, speed: 0.0003 },
+        ];
 
-        const starGeometry = new THREE.BufferGeometry();
-        starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+        starLayers.forEach(layer => {
+            const starVertices = [];
+            for (let i = 0; i < layer.count; i++) {
+                const x = THREE.MathUtils.randFloatSpread(2000);
+                const y = THREE.MathUtils.randFloatSpread(2000);
+                const z = THREE.MathUtils.randFloatSpread(2000);
+                starVertices.push(x, y, z);
+            }
 
-        const starMaterial = new THREE.PointsMaterial({
-            color: 0xffffff,
-            size: 0.7
+            const starGeometry = new THREE.BufferGeometry();
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+
+            const starMaterial = new THREE.PointsMaterial({
+                color: layer.color,
+                size: layer.size
+            });
+
+            const starfield = new THREE.Points(starGeometry, starMaterial);
+            starfield.userData.speed = layer.speed;
+            this.starfields.push(starfield);
+            this.scene.add(starfield);
         });
-
-        this.starfield = new THREE.Points(starGeometry, starMaterial);
-        this.scene.add(this.starfield);
     }
 
     createLights() {
@@ -141,6 +156,16 @@ class SceneSystem {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
     
+    handleZoom(event) {
+        if (!this.camera) return;
+
+        const zoomSpeed = 0.1;
+        this.camera.position.z += event.deltaY * zoomSpeed;
+
+        // Clamp the zoom level
+        this.camera.position.z = Math.max(15, Math.min(this.camera.position.z, 60));
+    }
+
     startAnimation() {
         if (this.isAnimating) return;
         
@@ -157,11 +182,16 @@ class SceneSystem {
             this.cosmicOrb.position.y = Math.sin(Date.now() * 0.001) * 0.5;
         }
 
-        if (this.starfield) {
-            this.starfield.rotation.y += 0.0001;
-        }
+        this.starfields.forEach(starfield => {
+            starfield.rotation.y += starfield.userData.speed;
+        });
 
-        this.buildingContainer.rotation.y += 0.005;
+        const rotationSpeed = 0.005;
+        Object.keys(this.buildingInstances).forEach((key, index) => {
+            const instance = this.buildingInstances[key];
+            instance.mesh.rotation.y += rotationSpeed * (index + 1);
+        });
+
 
         // Render
         if (this.renderer && this.scene && this.camera) {
@@ -174,49 +204,49 @@ class SceneSystem {
     stopAnimation() {
         this.isAnimating = false;
     }
-    
-    addBuilding(building) {
-        let mesh;
-        const material = new THREE.MeshPhongMaterial({
-            color: 0x00d4ff,
-            emissive: 0x001122,
-        });
 
-        switch (building.id) {
-            case 'gen1': { // Energy Condenser
-                const geometry = new THREE.IcosahedronGeometry(0.8, 0);
-                mesh = new THREE.Mesh(geometry, material);
-                break;
-            }
-            case 'gen2': { // Quantum Collector
-                const group = new THREE.Group();
-                const core = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), material);
-                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.1, 8, 32), material);
-                ring.rotation.x = Math.PI / 2;
-                group.add(core, ring);
-                mesh = group;
-                break;
-            }
-            case 'gen3': { // Stellar Forge
-                const geometry = new THREE.TorusKnotGeometry(0.7, 0.1, 100, 16);
-                mesh = new THREE.Mesh(geometry, material);
-                break;
-            }
-            default: {
-                const geometry = new THREE.BoxGeometry(1, 1, 1);
-                mesh = new THREE.Mesh(geometry, material);
-                break;
-            }
+    createBuildingGeometries() {
+        this.buildingGeometries['gen1'] = new THREE.IcosahedronGeometry(0.8, 0);
+        this.buildingGeometries['gen2'] = new THREE.SphereGeometry(0.7, 16, 16); // Simplified geometry
+        this.buildingGeometries['gen3'] = new THREE.TorusKnotGeometry(0.7, 0.1, 100, 16);
+        this.buildingGeometries['gen4'] = new THREE.TorusGeometry(0.7, 0.1, 16, 100);
+        this.buildingGeometries['gen5'] = new THREE.CylinderGeometry(0.2, 0.5, 1, 32);
+        this.buildingGeometries['gen6'] = new THREE.OctahedronGeometry(0.7, 0);
+        this.buildingGeometries['gen7'] = new THREE.ConeGeometry(0.5, 1, 32);
+    }
+
+    addBuilding(building) {
+        const MAX_INSTANCES = 1000;
+        if (!this.buildingInstances[building.id]) {
+            const geometry = this.buildingGeometries[building.id];
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x00d4ff,
+                emissive: 0x001122,
+            });
+            const mesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES);
+            this.scene.add(mesh);
+            this.buildingInstances[building.id] = {
+                mesh,
+                count: 0,
+                positions: []
+            };
         }
 
-        const buildingCount = this.buildingContainer.children.length;
-        const angle = buildingCount * 0.5;
-        const radius = 10 + Math.floor(buildingCount / 10) * 2;
+        const instance = this.buildingInstances[building.id];
+        if (instance.count >= MAX_INSTANCES) return;
+
+        const radius = 10 + Object.keys(this.buildingInstances).indexOf(building.id) * 5;
+        const angle = instance.count * (Math.PI / 4);
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
-        mesh.position.set(x, 0, z);
 
-        this.buildingContainer.add(mesh);
+        instance.positions.push({ x, y: 0, z });
+
+        const matrix = new THREE.Matrix4();
+        matrix.setPosition(x, 0, z);
+        instance.mesh.setMatrixAt(instance.count, matrix);
+        instance.mesh.instanceMatrix.needsUpdate = true;
+        instance.count++;
     }
 
     // Check if click hits the orb

@@ -32,6 +32,10 @@ class UISystem {
             this.isInitialized = true;
             console.log('[UISystem] UI initialized successfully');
             
+            // Hide loading screen and show game
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('game-container').style.display = 'block';
+
         } catch (error) {
             console.error('[UISystem] Failed to initialize UI:', error);
             throw error;

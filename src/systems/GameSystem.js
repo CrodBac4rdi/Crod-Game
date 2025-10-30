@@ -9,6 +9,7 @@ class GameSystem {
             xpRequired: 100,
             clickPower: 1,
             energyPerSecond: 0,
+            passiveEnergyBonus: 0,
             totalClicks: 0,
             playtime: 0
         };
@@ -196,9 +197,10 @@ class GameSystem {
     recalculateEnergyPerSecond() {
         const storeSystem = window.gameShell.getSystem('store');
         if (storeSystem) {
-            this.gameState.energyPerSecond = storeSystem.buildings.reduce((total, building) => {
+            const buildingProduction = storeSystem.buildings.reduce((total, building) => {
                 return total + (building.owned * building.production);
             }, 0);
+            this.gameState.energyPerSecond = buildingProduction + (this.gameState.passiveEnergyBonus || 0);
             this.updateUI();
         }
     }
