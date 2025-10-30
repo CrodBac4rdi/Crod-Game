@@ -143,5 +143,18 @@
             }, 500);
         });
     </script>
+    <script>
+        function createStars() {
+            const container = document.getElementById('stars-container');
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'stars';
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 2000}px`;
+                container.appendChild(star);
+            }
+        }
+        createStars();
+    </script>
 </body>
 </html>

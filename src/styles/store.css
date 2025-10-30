@@ -21,16 +21,20 @@
     background: var(--bg-tertiary);
     border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: background var(--transition-fast);
+    transition: background var(--transition-fast), transform var(--transition-fast);
+    border: 1px solid transparent;
 }
 
 .store-item:hover {
     background: var(--border-color);
+    transform: translateX(5px);
+    border-color: var(--color-primary);
 }
 
 .store-item.purchased {
     background: var(--bg-primary);
-    cursor: default;
+    cursor: not-allowed;
+    opacity: 0.5;
 }
 
 .item-name {

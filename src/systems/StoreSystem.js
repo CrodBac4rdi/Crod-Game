@@ -20,16 +20,16 @@ class StoreSystem {
 
     initBuildings() {
         this.buildings = [
-            { id: 'gen1', name: 'Energy Condenser', baseCost: 15, cost: 15, owned: 0, production: 1 },
-            { id: 'gen2', name: 'Quantum Collector', baseCost: 120, cost: 120, owned: 0, production: 8 },
-            { id: 'gen3', name: 'Stellar Forge', baseCost: 1500, cost: 1500, owned: 0, production: 50 },
+            { id: 'gen1', name: 'Energy Condenser', description: 'Generates 1 energy per second.', baseCost: 15, cost: 15, owned: 0, production: 1 },
+            { id: 'gen2', name: 'Quantum Collector', description: 'Generates 8 energy per second.', baseCost: 120, cost: 120, owned: 0, production: 8 },
+            { id: 'gen3', name: 'Stellar Forge', description: 'Generates 50 energy per second.', baseCost: 1500, cost: 1500, owned: 0, production: 50 },
         ];
     }
 
     initUpgrades() {
         this.upgrades = [
-            { id: 'upg1', name: 'Reinforced Clicks', cost: 150, purchased: false, effect: { type: 'click', multiplier: 2 } },
-            { id: 'upg2', name: 'Efficient Condensers', cost: 600, purchased: false, effect: { type: 'building', buildingId: 'gen1', multiplier: 2 } },
+            { id: 'upg1', name: 'Reinforced Clicks', description: 'Doubles click power.', cost: 150, purchased: false, effect: { type: 'click', multiplier: 2 } },
+            { id: 'upg2', name: 'Efficient Condensers', description: 'Doubles the production of Energy Condensers.', cost: 600, purchased: false, effect: { type: 'building', buildingId: 'gen1', multiplier: 2 } },
         ];
     }
 
@@ -49,6 +49,7 @@ class StoreSystem {
             const buildingElement = document.createElement('div');
             buildingElement.className = 'store-item';
             buildingElement.id = `building-${building.id}`;
+            buildingElement.title = building.description;
             buildingElement.innerHTML = `
                 <span class="item-name">${building.name}</span>
                 <span class="item-cost">${building.cost}</span>
@@ -62,6 +63,7 @@ class StoreSystem {
             const upgradeElement = document.createElement('div');
             upgradeElement.className = 'store-item';
             upgradeElement.id = `upgrade-${upgrade.id}`;
+            upgradeElement.title = upgrade.description;
             upgradeElement.innerHTML = `
                 <span class="item-name">${upgrade.name}</span>
                 <span class="item-cost">${upgrade.cost}</span>
