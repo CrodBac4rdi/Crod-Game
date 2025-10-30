@@ -35,7 +35,7 @@
 }
 
 .resource {
-    background: var(--bg-secondary);
+    background: rgba(21, 21, 32, 0.75);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     padding: var(--spacing-md) var(--spacing-lg);
@@ -43,6 +43,7 @@
     align-items: center;
     gap: var(--spacing-sm);
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     transition: transform var(--transition-normal), box-shadow var(--transition-normal);
     will-change: var(--will-change-transform);
     transform: var(--gpu-acceleration);
@@ -73,11 +74,12 @@
 
 /* Level Panel */
 .level-panel {
-    background: var(--bg-secondary);
+    background: rgba(21, 21, 32, 0.75);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     padding: var(--spacing-md) var(--spacing-lg);
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     contain: layout style;
     transform: var(--gpu-acceleration);
 }
@@ -222,7 +224,8 @@
     padding: var(--spacing-md) var(--spacing-xl);
     color: var(--text-primary);
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: 700;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
     cursor: pointer;
     display: flex;
     flex-direction: column;

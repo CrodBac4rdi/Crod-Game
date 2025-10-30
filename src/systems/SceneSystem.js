@@ -161,9 +161,7 @@ class SceneSystem {
             this.starfield.rotation.y += 0.0001;
         }
 
-        this.buildingContainer.children.forEach((building, index) => {
-            building.rotation.y += 0.01 + index * 0.001;
-        });
+        this.buildingContainer.rotation.y += 0.005;
 
         // Render
         if (this.renderer && this.scene && this.camera) {
@@ -212,10 +210,11 @@ class SceneSystem {
         }
 
         const buildingCount = this.buildingContainer.children.length;
-        const x = 15;
-        const y = (buildingCount % 5) * -2.5 + 5;
-        const z = Math.floor(buildingCount / 5) * -2.5;
-        mesh.position.set(x, y, z);
+        const angle = buildingCount * 0.5;
+        const radius = 10 + Math.floor(buildingCount / 10) * 2;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        mesh.position.set(x, 0, z);
 
         this.buildingContainer.add(mesh);
     }

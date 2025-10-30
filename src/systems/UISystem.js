@@ -99,6 +99,7 @@ class UISystem {
         this.updateCrystals(0);
         this.updateLevel(1);
         this.updateXP(0, 100);
+        this.updatePrestigeButton();
     }
     
     updateEnergy(value, rate = 0) {
@@ -111,6 +112,23 @@ class UISystem {
         
         if (rateElement && rate > 0) {
             rateElement.textContent = `+${window.formatNumber(rate)} /s`;
+        }
+
+        this.updatePrestigeButton();
+    }
+
+    updatePrestigeButton() {
+        const prestigeBtn = this.elements.get('prestige-btn');
+        const gameSystem = window.gameShell.getSystem('game');
+        if (prestigeBtn && gameSystem) {
+            const crystals = gameSystem.getPrestigeCrystals();
+            if (crystals > 0) {
+                prestigeBtn.disabled = false;
+                prestigeBtn.querySelector('.btn-text').textContent = `Ascend for ${crystals} 💎`;
+            } else {
+                prestigeBtn.disabled = true;
+                prestigeBtn.querySelector('.btn-text').textContent = 'Ascend';
+            }
         }
     }
     
