@@ -72,8 +72,6 @@ class GameSystem {
         
         // Update UI
         this.updateUI();
-
-        this.loadGame();
     }
     
     saveGame() {
@@ -216,6 +214,7 @@ class GameSystem {
         this.sceneSystem.startAnimation();
         
         console.log('[GameSystem] Game started');
+        this.loadGame();
     }
     
     gameLoop() {
